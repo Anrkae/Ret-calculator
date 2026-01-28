@@ -25,15 +25,18 @@ body {
     -webkit-backdrop-filter: blur(5px);
     border-left: 3px solid red;
     border-radius: var(--radius);
-    width: 80vw !important:
+}
+
+.timer-container {
     transition: all 0.3s ease;
 }
-.glass:hover {
-    transform: scale(1.1);
+
+.timer-container:hover {
+    transform: scale(1.03);
 }
 
 #jackin-snippet {
-    width: 80vw !important:
+    width: 80vw !important;
 }
 
 .dv {
@@ -53,7 +56,6 @@ header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    transition: all 0.3s ease;
 }
 
 header.minimized { height: 5px; padding: 0; overflow: hidden; }
