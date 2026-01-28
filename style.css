@@ -25,6 +25,8 @@ body {
 .carrossel {
     display: flex;
     justify-content: center;
+    width: 100wh;
+    padding: auto;
 }
 
 .glass {
