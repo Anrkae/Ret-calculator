@@ -19,10 +19,12 @@ body {
     overflow: hidden;
     padding: 18px;
     padding-top: 20px;
+    padding-bottom: 40px;
 }
 
 .carrossel {
     display: flex;
+    justify-content: center;
 }
 
 .glass {
