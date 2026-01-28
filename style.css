@@ -60,7 +60,7 @@ header.minimized { height: 5px; padding: 0; overflow: hidden; }
 main { padding: 80px 20px 100px; height: 100%; overflow-y: auto; }
 
 .page { display: none; }
-.page.active { display: flex; flex-direction: column; gap: 20px; }
+.page.active { display: flex; flex-direction: display; gap: 20px; }
 
 /* Inputs */
 .btn {
