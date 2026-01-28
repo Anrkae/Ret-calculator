@@ -27,6 +27,9 @@ body {
     border-radius: var(--radius);
     width: 80vw !important:
 }
+.glass:hover {
+    scale: 1.1;
+}
 
 #jackin-snippet {
     width: 80vw !important:
