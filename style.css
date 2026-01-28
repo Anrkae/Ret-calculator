@@ -26,7 +26,7 @@ body {
     border-left: 3px solid red;
     border-radius: var(--radius);
     width: 80vw !important:
-    transition: transform 2s ease;
+    transition: all 0.3s ease;
 }
 .glass:hover {
     transform: scale(1.1);
