@@ -27,6 +27,10 @@ body {
     border-radius: var(--radius);
 }
 
+#jackin-snippet {
+    width: 240px:
+}
+
 .dv {
     background: var(--glass-bg);
     padding: 22px;
