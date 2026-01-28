@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claro Retenção - Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header id="jackin-snippet" class="glass">
+        <div class="snippet-content">
+            <div class="status-info">
+                <span id="shift-status">Off-line</span>
+                <span id="session-timer">00:00:00</span>
+            </div>
+            <div class="active-break" id="active-break-display" style="display: none;">
+                <span class="dot"></span> Em Pausa: <span id="break-timer">00:00</span>
+            </div>
+        </div>
+        <button id="toggle-snippet" onclick="toggleSnippet()">−</button>
+    </header>
+
+    <main id="app">
+        <section id="page-home" class="page active">
+            <div class="timer-container glass">
+                <h2 id="call-display">00:00</h2>
+                <p>Tempo de Ligação</p>
+            </div>
+
+            <div class="control-group dv">
+                <h3>Controle de Chamada</h3>
+                <button class="btn btn-primary" onclick="startCall()">Em Ligação</button>
+                <div class="row">
+                    <button class="btn btn-success" onclick="endCall('retido')">Retido</button>
+                    <button class="btn btn-danger" onclick="endCall('cancelado')">Cancelado</button>
+                </div>
+            </div>
+
+            <div class="control-group dv">
+                <h3>Controle de Jackin</h3>
+                <button class="btn btn-glass" id="btn-shift" onclick="toggleShift()">Iniciar Jornada</button>
+                <div class="row">
+                    <select id="pause-type" class="glass">
+                        <option value="Descanso">Descanso</option>
+                        <option value="Lanche">Lanche</option>
+                        <option value="Particular">Particular</option>
+                    </select>
+                    <button class="btn btn-warning" onclick="startPause()">Pausa</button>
+                    <button class="btn btn-glass" onclick="endPause()">Retornar</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="page-stats" class="page">
+            <div class="stats-header">
+                <h2>Seus Resultados</h2>
+                <select id="stats-filter" class="glass" onchange="updateStatsDisplay()">
+                    <option value="today">Hoje</option>
+                    <option value="week">Última Semana</option>
+                    <option value="month">Último Mês</option>
+                    <option value="current_month">Mês Atual</option>
+                </select>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card glass">
+                    <h4 id="stat-tma">00:00</h4>
+                    <p>TMA</p>
+                </div>
+                <div class="stat-card glass">
+                    <h4 id="stat-disc">0%</h4>
+                    <p>Taxa Desconexão</p>
+                </div>
+                <div class="stat-card glass">
+                    <h4 id="stat-logged">0h 0m</h4>
+                    <p>Tempo Logado</p>
+                </div>
+                <div class="stat-card glass">
+                    <h4 id="stat-pauses">0</h4>
+                    <p>Total Pausas</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <nav class="bottom-nav">
+        <button onclick="showPage('home')" class="nav-item active" id="nav-home">Home</button>
+        <button onclick="showPage('stats')" class="nav-item" id="nav-stats">Estatísticas</button>
+    </nav>
+
+    <script src="script.js"></script>
+</body>
+</html>
