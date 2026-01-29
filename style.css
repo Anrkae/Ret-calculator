@@ -176,7 +176,7 @@ main { padding: 80px 20px 100px; height: 100%; overflow-y: auto; }
 .row { display: flex; gap: 10px; width: 100%; }
 
 .control-group { display: flex; flex-direction: column; gap: 12px;
-flex: 0 0 100%;
+flex: 0 0 40%;
     
 }
 
