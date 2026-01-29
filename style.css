@@ -75,6 +75,10 @@ body {
     border-radius: var(--radius);
 }
 
+.card-principal {
+    padding: 40px;
+}
+
 .card {
     margin: var(--margin);
     text-align: center;
@@ -273,6 +277,10 @@ select.glass { border: none; padding: 10px; border-radius: 10px; appearance: non
         margin-bottom: 18px;
     }
     
+    .card-principal {
+        padding: 0;
+    }
+
     .card {
         scroll-snap-align: center;
         max-width: 75%;
