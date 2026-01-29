@@ -53,6 +53,7 @@ body {
 }
 .dv {
     border-radius: var(--radius);
+    background: var(--glass-bg);
 }
 
 .carrossel {
