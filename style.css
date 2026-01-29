@@ -47,9 +47,8 @@ body {
 }
 
 .controles {
-    display: flex;
-    justify-content: space-evenly;
-    gap: auto;
+    display: flex !important;
+    justify-content: space-evenly !important;
 }
 
 .carrossel {
