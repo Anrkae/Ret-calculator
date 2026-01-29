@@ -11,7 +11,6 @@ let db = JSON.parse(localStorage.getItem('claro_data')) || {
     pauses: []
 };
 
-/* ---------- TOAST ---------- */
 function toast(msg){
     const t=document.createElement('div');
     t.className='toast';
@@ -24,7 +23,6 @@ function toast(msg){
     },2500);
 }
 
-/* ---------- CONFIRMAÇÃO COM GSAP ---------- */
 function requireConfirm(btn, key){
     if(btn.dataset.confirm === key){
         clearTimeout(btn._confirmTimeout);
@@ -65,14 +63,12 @@ function requireConfirm(btn, key){
     return false;
 }
 
-/* ---------- SALVAR ---------- */
 function saveData(){
     localStorage.setItem('claro_data',JSON.stringify(db));
     updateStatsDisplay();
     updateHomeCards();
 }
 
-/* ---------- NAVEGAÇÃO ---------- */
 function showPage(pageId){
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
@@ -81,7 +77,6 @@ function showPage(pageId){
     if(pageId==='stats') updateStatsDisplay();
 }
 
-/* ---------- CHAMADAS ---------- */
 function startCall(){
     if(!isShiftActive) return toast('Você está offline');
     if(isPauseActive) return toast('Finalize a pausa');
@@ -117,7 +112,6 @@ function endCall(result){
     saveData();
 }
 
-/* ---------- JORNADA ---------- */
 function toggleShift(){
     const btn=document.getElementById('btn-shift');
 
@@ -134,6 +128,7 @@ function toggleShift(){
         statusText.innerText='Em Jornada';
         snippet.classList.replace('status-off','status-on');
         shiftInterval=setInterval(updateShiftTimer,1000);
+        updateSnippetIcon();
         return;
     }
 
@@ -149,6 +144,7 @@ function toggleShift(){
     statusText.innerText='Off-line';
     snippet.classList.replace('status-on','status-off');
     document.getElementById('session-timer').innerText='00:00:00';
+    updateSnippetIcon();
     saveData();
 }
 
@@ -157,7 +153,6 @@ function updateShiftTimer(){
     document.getElementById('session-timer').innerText=formatTimeFull(diff);
 }
 
-/* ---------- PAUSA ---------- */
 function startPause(){
     if(!isShiftActive) return toast('Você está offline');
     if(isCallActive) return toast('Finalize a ligação');
@@ -171,8 +166,8 @@ function startPause(){
     document.getElementById('active-break-display').style.display='block';
 
     pauseInterval=setInterval(()=>{
-        document.getElementById('break-timer').innerText =
-            formatHoursMinutesFromMs(Date.now()-pauseStartTime);
+        const diffSeconds = Math.floor((Date.now()-pauseStartTime)/1000);
+        document.getElementById('break-timer').innerText = formatTime(diffSeconds);
     },1000);
 }
 
@@ -197,7 +192,25 @@ function endPause(force){
     saveData();
 }
 
-/* ---------- FORMATADORES ---------- */
+function toggleSnippet() {
+    const snippet = document.getElementById('jackin-snippet');
+    snippet.classList.toggle('minimized');
+    updateSnippetIcon();
+}
+
+function updateSnippetIcon() {
+    const snippet = document.getElementById('jackin-snippet');
+    const btn = document.getElementById('toggle-snippet');
+    
+    if (snippet.classList.contains('minimized')) {
+        btn.innerHTML = '<i class="fa-solid fa-stopwatch"></i>';
+        btn.style.color = isShiftActive ? '#00ff6a' : '#fff';
+    } else {
+        btn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+        btn.style.color = '';
+    }
+}
+
 function formatTime(s){
     const m=Math.floor(s/60);
     const sec=s%60;
@@ -216,7 +229,6 @@ function formatHoursMinutesFromMs(ms){
     return `${Math.floor(total/60)}h ${total%60}m`;
 }
 
-/* ---------- CARDS ---------- */
 function updateHomeCards(){
     const today=new Date().toDateString();
     const calls=db.calls.filter(c=>new Date(c.timestamp).toDateString()===today);
@@ -263,7 +275,6 @@ function updateStatsDisplay(){
 updateStatsDisplay();
 updateHomeCards();
 
-/* ---------- CARROSSEL ---------- */
 const carrossel=document.querySelector('.carrossel');
 const cards=Array.from(carrossel.querySelectorAll('.card'));
 let index=0;

@@ -102,9 +102,40 @@ header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-header.minimized { height: 10px; padding: 0; overflow: hidden; }
+header.minimized {
+    transform: translateX(calc(-100% + 25px)); 
+}
+
+#toggle-snippet {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: white;
+    width: 35px;
+    height: 35px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    outline: none;
+    font-size: 16px;
+    z-index: 101;
+}
+
+#toggle-snippet:active {
+    transform: scale(0.9);
+    background: rgba(255, 255, 255, 0.2);
+}
+
+header.minimized #toggle-snippet {
+    transform: scale(1.5);
+    translate: 35%;
+    background: none;
+}
 
 .status-info { display: flex; gap: 15px; font-weight: 600; font-size: 0.9em; }
 
