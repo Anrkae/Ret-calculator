@@ -71,6 +71,7 @@ body {
     margin-bottom: 10px;
     transition: all 0.3s ease;
     border-left: 3px solid red;
+    flex: 0 0 40%
 }
 
 .bord {
@@ -283,5 +284,8 @@ select.glass { border: none; padding: 10px; border-radius: 10px; appearance: non
     }
     .card.card::scroll-marker:target-current {
         background-color: var(--primary);
+    }
+    .controles {
+        flex-direction: column;
     }
 }
