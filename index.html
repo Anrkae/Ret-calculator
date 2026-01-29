@@ -45,24 +45,26 @@
                 </div>
             </div>
 
-            <div class="control-group dv">
-                <button class="btn btn-primary" onclick="startCall()">Iniciar Ligação</button>
-                <div class="row">
-                    <button class="btn btn-success" onclick="endCall('retido')">Retido</button>
-                    <button class="btn btn-danger" onclick="endCall('cancelado')">Cancelado</button>
+            <div class="controles">
+                <div class="control-group dv">
+                    <button class="btn btn-primary" onclick="startCall()">Iniciar Ligação</button>
+                    <div class="row">
+                        <button class="btn btn-success" onclick="endCall('retido')">Retido</button>
+                        <button class="btn btn-danger" onclick="endCall('cancelado')">Cancelado</button>
+                    </div>
                 </div>
-            </div>
-
-            <div class="control-group dv">
-                <button class="btn btn-glass" id="btn-shift" onclick="toggleShift()">Iniciar Jornada</button>
-                <div class="row">
-                    <select id="pause-type" class="glass">
-                        <option value="Descanso">Descanso</option>
-                        <option value="Lanche">Lanche</option>
-                        <option value="Particular">Particular</option>
-                    </select>
-                    <button class="btn btn-warning" onclick="startPause()">Pausa</button>
-                    <button class="btn btn-danger" onclick="endPause()">Retornar</button>
+    
+                <div class="control-group dv">
+                    <button class="btn btn-glass" id="btn-shift" onclick="toggleShift()">Iniciar Jornada</button>
+                    <div class="row">
+                        <select id="pause-type" class="glass">
+                            <option value="Descanso">Descanso</option>
+                            <option value="Lanche">Lanche</option>
+                            <option value="Particular">Particular</option>
+                        </select>
+                        <button class="btn btn-warning" onclick="startPause()">Pausa</button>
+                        <button class="btn btn-danger" onclick="endPause()">Retornar</button>
+                    </div>
                 </div>
             </div>
         </section>

@@ -46,6 +46,11 @@ body {
     padding: 0;
 }
 
+.controles {
+    display: flex;
+    gap: 1em;
+}
+
 .carrossel {
     display: flex;
     justify-content: space-evenly;
