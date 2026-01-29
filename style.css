@@ -4,11 +4,38 @@
     --glass-border: 2px solid rgba(255, 255, 255, 0.03);
     --primary: red;
     --success: #34C759;
-    --danger: #FF3B30;
+    --danger: rgba(255, 255, 255, 0.03);
     --warning: #FF9500;
     --text: #fff;
     --radius: 14px;
     --margin: 18px;
+}
+
+/* Chrome, Edge, Safari */
+::-webkit-scrollbar {
+    width: 0px;
+    height: 0px;
+}
+
+::-webkit-scrollbar {
+    width: 0px;
+    height: 0px;
+}
+
+* {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    user-select: none;
+    
+    -webkit-touch-callout: none;
+    
+    -webkit-tap-highlight-color: transparent;
+    tap-highlight-color: transparent;
+
+    outline: none;
 }
 
 * { margin: 0; padding: 0; box-box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
@@ -141,32 +168,41 @@ main { padding: 80px 20px 100px; height: 100%; overflow-y: auto; }
 
 select.glass { border: none; padding: 10px; border-radius: 10px; appearance: none; text-align: center;}
 
-.toast {
-    position: fixed;
-    bottom: 30px;
-    left: 50%;
-    transform: translateX(-50%) translateY(20px);
-    background: rgba(30, 30, 30, 0.85);
-    backdrop-filter: blur(12px);
-    color: #fff;
-    padding: 14px 22px;
-    border-radius: 14px;
+.toast{
+    position:fixed;
+    bottom:90px;
+    left:50%;
+    transform:translateX(-50%) translateY(20px);
+    padding:16px 22px;
+    border-radius:16px;
+    background:rgba(20, 20, 20, 0.6);
+    backdrop-filter:blur(10px);
+    color:#fff;
+    font-weight:500;
     font-size: 14px;
-    opacity: 0;
-    pointer-events: none;
-    transition: all .3s ease;
-    z-index: 9999;
-    box-shadow: 0 8px 25px rgba(0,0,0,.35);
+    opacity:0;
+    transition:.3s;
+    z-index:9999;
 }
-
-.toast.show {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
+.toast.show{
+    opacity:1;
+    transform:translateX(-50%) translateY(0)
 }
-
-.toast.success { border-left: 4px solid #2ecc71; }
-.toast.warn    { border-left: 4px solid #f1c40f; }
-.toast.danger  { border-left: 4px solid #e74c3c; }
+.confirming{
+    position:relative;
+    overflow:hidden
+}
+.confirming::after{
+    content:'';
+    position:absolute;
+    inset:0;
+    background:rgba(0,0,0,.35);
+    transform:translateX(-100%);
+    animation:confirmSlide 2.5s linear forwards
+}
+@keyframes confirmSlide{
+    to{transform:translateX(0)}
+}
 
 
 @media (max-width: 600px) {

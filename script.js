@@ -11,49 +11,6 @@ let db = JSON.parse(localStorage.getItem('claro_data')) || {
     pauses: []
 };
 
-/* ---------- STYLE DINÂMICO ---------- */
-(function(){
-    const style = document.createElement('style');
-    style.innerHTML = `
-        .toast{
-            position:fixed;
-            bottom:90px;
-            left:50%;
-            transform:translateX(-50%) translateY(20px);
-            padding:16px 22px;
-            border-radius:16px;
-            background:rgba(20,20,20,.9);
-            backdrop-filter:blur(10px);
-            color:#fff;
-            font-weight:600;
-            opacity:0;
-            transition:.3s;
-            z-index:9999;
-            box-shadow:0 10px 30px rgba(0,0,0,.4)
-        }
-        .toast.show{
-            opacity:1;
-            transform:translateX(-50%) translateY(0)
-        }
-        .confirming{
-            position:relative;
-            overflow:hidden
-        }
-        .confirming::after{
-            content:'';
-            position:absolute;
-            inset:0;
-            background:rgba(0,0,0,.35);
-            transform:translateX(-100%);
-            animation:confirmSlide 2.5s linear forwards
-        }
-        @keyframes confirmSlide{
-            to{transform:translateX(0)}
-        }
-    `;
-    document.head.appendChild(style);
-})();
-
 /* ---------- TOAST ---------- */
 function toast(msg){
     const t=document.createElement('div');

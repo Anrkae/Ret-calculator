@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Claro Retenção - Dashboard</title>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -41,8 +41,7 @@
             </div>
 
             <div class="control-group dv">
-                <h3>Controle de Chamada</h3>
-                <button class="btn btn-primary" onclick="startCall()">Em Ligação</button>
+                <button class="btn btn-primary" onclick="startCall()">Iniciar Ligação</button>
                 <div class="row">
                     <button class="btn btn-success" onclick="endCall('retido')">Retido</button>
                     <button class="btn btn-danger" onclick="endCall('cancelado')">Cancelado</button>
@@ -50,7 +49,6 @@
             </div>
 
             <div class="control-group dv">
-                <h3>Controle de Jackin</h3>
                 <button class="btn btn-glass" id="btn-shift" onclick="toggleShift()">Iniciar Jornada</button>
                 <div class="row">
                     <select id="pause-type" class="glass">
@@ -59,7 +57,7 @@
                         <option value="Particular">Particular</option>
                     </select>
                     <button class="btn btn-warning" onclick="startPause()">Pausa</button>
-                    <button class="btn btn-glass" onclick="endPause()">Retornar</button>
+                    <button class="btn btn-danger" onclick="endPause()">Retornar</button>
                 </div>
             </div>
         </section>
