@@ -51,6 +51,9 @@ body {
     justify-content: space-evenly;
     width: 100wh;
 }
+.dv {
+    border-radius: var(--radius);
+}
 
 .carrossel {
     display: flex;
@@ -94,13 +97,6 @@ body {
 }
 .status-off {
     border-left: 3px solid #ff2b2b;
-}
-
-.dv {
-    background: var(--glass-bg);
-    padding: 22px;
-    border-radius: var(--radius);
-    
 }
 
 header {
@@ -288,5 +284,6 @@ select.glass { border: none; padding: 10px; border-radius: 10px; appearance: non
     }
     .controles {
         flex-direction: column;
+        gap: 1em;
     }
 }
