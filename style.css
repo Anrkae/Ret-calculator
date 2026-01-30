@@ -325,10 +325,11 @@ select.glass { border: none; padding: 10px; border-radius: 10px; appearance: non
 
 @media (max-width: 600px) {
     .card-principal {
+        margin-right: 15px !important;
         display: flex;
     }
     .carrossel {
-        width: 100%;
+        width: 100wh;
         overflow-x: auto;
         gap: 1em;
         scroll-behavior: smooth;
