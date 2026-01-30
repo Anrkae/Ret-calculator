@@ -104,19 +104,19 @@ body {
 }
 
 .status-on {
-    border-left: 3px solid #00ff6a;
+    border-right: 3px solid #00ff6a;
 }
 .status-off {
-    border-left: 3px solid #ff2b2b;
+    border-right: 3px solid #ff2b2b;
 }
 
 header {
     position: fixed;
     top: 10px;
-    left: 5%;
-    width: 90%;
+    left: 0%;
     z-index: 100;
     padding: 10px 20px;
+    border-radius: 0 var(--radius) var(--radius) 0 !important;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -124,7 +124,7 @@ header {
 }
 
 header.minimized {
-    transform: translateX(calc(-100% + 25px)); 
+    transform: translateX(calc(-100% + 50px)); 
 }
 
 #toggle-snippet {
