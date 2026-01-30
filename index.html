@@ -13,7 +13,7 @@
 </head>
 <body>
 
-    <header id="jackin-snippet" class="glass status-off">
+    <header id="jackin-snippet" class="glass status-off minimized">
         <div class="snippet-content">
             <div class="status-info">
                 <span id="shift-status">Off-line</span>
@@ -23,7 +23,7 @@
                 <span class="dot"></span> Em Pausa: <span id="break-timer">00:00</span>
             </div>
         </div>
-        <button id="toggle-snippet"  onclick="toggleSnippet()"><i class="fa-solid fa-xmark"></i></button>
+        <button id="toggle-snippet"  onclick="toggleSnippet()"><i class="fa-solid fa-stopwatch"></i></button>
     </header>
 
     <main id="app">
@@ -57,7 +57,7 @@
                 <div class="control-group dv">
                     <button class="btn btn-glass" id="btn-shift" onclick="toggleShift()">Iniciar Jornada</button>
                     <div class="row">
-                        <select id="pause-type" class="glass">
+                        <select id="pause-type" class="glass select">
                             <option value="Descanso">Descanso</option>
                             <option value="Lanche">Lanche</option>
                             <option value="Particular">Particular</option>
@@ -72,7 +72,7 @@
         <section id="page-stats" class="page">
             <div class="stats-header">
                 <h2>Seus Resultados</h2>
-                <select id="stats-filter" class="glass" onchange="updateStatsDisplay()">
+                <select id="stats-filter" class="glass select" onchange="updateStatsDisplay()">
                     <option value="today">Hoje</option>
                     <option value="week">Última Semana</option>
                     <option value="month">Último Mês</option>
