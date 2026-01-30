@@ -4,6 +4,7 @@ let pauseStartTime, pauseInterval;
 let isCallActive = false;
 let isShiftActive = false;
 let isPauseActive = false;
+let pendingCallData = null;
 
 let db = JSON.parse(localStorage.getItem('claro_data')) || {
     calls: [],
@@ -81,7 +82,6 @@ function startCall(){
     if(!isShiftActive) return toast('Você está offline');
     if(isPauseActive) return toast('Finalize a pausa');
     if(isCallActive) return toast('Ligação já ativa');
-
     isCallActive=true;
     callStartTime=Date.now();
     callInterval=setInterval(updateCallTimer,1000);
@@ -89,37 +89,59 @@ function startCall(){
 
 function updateCallTimer(){
     const diff=Math.floor((Date.now()-callStartTime)/1000);
-    document.querySelector('.timer-container h2').innerText=formatTime(diff);
+    document.getElementById('call-display').innerText=formatTime(diff);
 }
 
 function endCall(result){
     if(!isCallActive) return toast('Nenhuma ligação ativa');
-
     const btn=document.activeElement;
     if(!requireConfirm(btn,result)) return;
 
     clearInterval(callInterval);
     const duration=Math.floor((Date.now()-callStartTime)/1000);
 
-    db.calls.push({
-        timestamp:new Date().toISOString(),
-        duration,
-        result
-    });
+    pendingCallData = {
+        timestamp: new Date().toISOString(),
+        duration: duration,
+        result: result,
+        reason: null
+    };
 
+    if(result === 'cancelado') {
+        document.getElementById('modal-motivos').style.display = 'flex';
+    } else {
+        finalizeRecord(result, null);
+    }
+}
+
+function confirmReason(reason) {
+    const btn = event.currentTarget;
+    if (!requireConfirm(btn, reason)) return;
+
+    document.getElementById('modal-motivos').style.display = 'none';
+    if(reason === '021') {
+        finalizeRecord('improdutivo', '021');
+    } else {
+        finalizeRecord('cancelado', reason);
+    }
+}
+
+function finalizeRecord(result, reason) {
+    if(!pendingCallData) return;
+    pendingCallData.result = result;
+    pendingCallData.reason = reason;
+    db.calls.push(pendingCallData);
     isCallActive=false;
-    document.querySelector('.timer-container h2').innerText='00:00';
+    pendingCallData = null;
+    document.getElementById('call-display').innerText='00:00';
     saveData();
 }
 
 function toggleShift(){
     const btn=document.getElementById('btn-shift');
-
     if(isShiftActive && !requireConfirm(btn,'shift')) return;
-
     const snippet=document.getElementById('jackin-snippet');
     const statusText=document.getElementById('shift-status');
-
     if(!isShiftActive){
         isShiftActive=true;
         shiftStartTime=Date.now();
@@ -131,13 +153,10 @@ function toggleShift(){
         updateSnippetIcon();
         return;
     }
-
-    if(isCallActive) endCall('retido');
+    if(isCallActive) finalizeRecord('retido', null);
     if(isPauseActive) endPause(true);
-
     clearInterval(shiftInterval);
     db.shifts.push({start:shiftStartTime,end:Date.now()});
-
     isShiftActive=false;
     btn.innerText='Iniciar Jornada';
     btn.classList.replace('btn-danger','btn-glass');
@@ -157,14 +176,11 @@ function startPause(){
     if(!isShiftActive) return toast('Você está offline');
     if(isCallActive) return toast('Finalize a ligação');
     if(isPauseActive) return toast('Pausa já ativa');
-
     const btn=document.activeElement;
     if(!requireConfirm(btn,'pause')) return;
-
     isPauseActive=true;
     pauseStartTime=Date.now();
     document.getElementById('active-break-display').style.display='block';
-
     pauseInterval=setInterval(()=>{
         const diffSeconds = Math.floor((Date.now()-pauseStartTime)/1000);
         document.getElementById('break-timer').innerText = formatTime(diffSeconds);
@@ -176,17 +192,14 @@ function endPause(force){
         toast('Nenhuma pausa ativa');
         return;
     }
-
     const btn=document.activeElement;
     if(!force && !requireConfirm(btn,'return')) return;
-
     clearInterval(pauseInterval);
     db.pauses.push({
         type:document.getElementById('pause-type').value,
         start:pauseStartTime,
         end:Date.now()
     });
-
     isPauseActive=false;
     document.getElementById('active-break-display').style.display='none';
     saveData();
@@ -201,7 +214,6 @@ function toggleSnippet() {
 function updateSnippetIcon() {
     const snippet = document.getElementById('jackin-snippet');
     const btn = document.getElementById('toggle-snippet');
-    
     if (snippet.classList.contains('minimized')) {
         btn.innerHTML = '<i class="fa-solid fa-stopwatch"></i>';
         btn.style.color = isShiftActive ? '#00ff6a' : '#fff';
@@ -232,19 +244,16 @@ function formatHoursMinutesFromMs(ms){
 function updateHomeCards(){
     const today=new Date().toDateString();
     const calls=db.calls.filter(c=>new Date(c.timestamp).toDateString()===today);
-
-    document.querySelector('.desc-container h2').innerText =
+    document.getElementById('desc-display').innerText =
         calls.filter(c=>c.result==='cancelado').length;
-
     const total=calls.reduce((a,c)=>a+c.duration,0);
-    document.querySelector('.tma-container h2').innerText =
+    document.getElementById('tma-display').innerText =
         calls.length ? Math.round(total/calls.length) : 0;
 }
 
 function updateStatsDisplay(){
     const filter=document.getElementById('stats-filter').value;
     const now=new Date();
-
     let calls=db.calls.filter(c=>{
         const d=new Date(c.timestamp);
         if(filter==='today') return d.toDateString()===now.toDateString();
@@ -252,22 +261,18 @@ function updateStatsDisplay(){
             return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear();
         return true;
     });
-
     const total=calls.reduce((a,c)=>a+c.duration,0);
     document.getElementById('stat-tma').innerText =
-        calls.length ? Math.round(total/calls.length) : 0;
-
-    const cancels=calls.filter(c=>c.result==='cancelado').length;
+        calls.length ? formatTime(Math.round(total/calls.length)) : "00:00";
+    const validPerformance = calls.filter(c => c.result === 'retido' || c.result === 'cancelado');
+    const cancels = calls.filter(c => c.result === 'cancelado').length;
     document.getElementById('stat-disc').innerText =
-        calls.length ? Math.round((cancels/calls.length)*100)+'%' : '0%';
-
+        validPerformance.length ? Math.round((cancels/validPerformance.length)*100)+'%' : '0%';
     const pauseMs=db.pauses.reduce((a,p)=>a+(p.end-p.start),0);
     document.getElementById('stat-pauses').innerText =
         formatHoursMinutesFromMs(pauseMs);
-
     let logged=db.shifts.reduce((a,s)=>a+(s.end-s.start),0);
     if(isShiftActive) logged+=Date.now()-shiftStartTime;
-
     document.getElementById('stat-logged').innerText =
         formatHoursMinutesFromMs(logged);
 }

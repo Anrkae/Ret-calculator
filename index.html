@@ -3,17 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    
     <title>Claro Retenção - Dashboard</title>
-    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
     <link rel="stylesheet" href="style.css">
-    
 </head>
 <body>
 
-    <header id="jackin-snippet" class="glass status-off minimized">
+    <header id="jackin-snippet" class="glass status-off">
         <div class="snippet-content">
             <div class="status-info">
                 <span id="shift-status">Off-line</span>
@@ -23,7 +19,7 @@
                 <span class="dot"></span> Em Pausa: <span id="break-timer">00:00</span>
             </div>
         </div>
-        <button id="toggle-snippet"  onclick="toggleSnippet()"><i class="fa-solid fa-stopwatch"></i></button>
+        <button id="toggle-snippet"  onclick="toggleSnippet()"><i class="fa-solid fa-xmark"></i></button>
     </header>
 
     <main id="app">
@@ -36,11 +32,11 @@
             </div>
             <div class="carrossel">
                 <div class="desc-container glass card">
-                    <h2 id="desc-display">2</h2>
+                    <h2 id="desc-display">0</h2>
                     <p>Desconexões</p>
                 </div>
                 <div class="tma-container glass card">
-                    <h2 id="call-display">628</h2>
+                    <h2 id="tma-display">0</h2>
                     <p>TMA</p>
                 </div>
             </div>
@@ -52,19 +48,20 @@
                         <button class="btn btn-success" onclick="endCall('retido')">Retido</button>
                         <button class="btn btn-danger" onclick="endCall('cancelado')">Cancelado</button>
                     </div>
+                    <button class="btn btn-glass" style="margin-top: 10px; border: 1px solid rgba(255,255,255,0.1);" onclick="endCall('improdutivo')">Improdutivo</button>
                 </div>
     
                 <div class="control-group dv">
                     <button class="btn btn-glass" id="btn-shift" onclick="toggleShift()">Iniciar Jornada</button>
                     <div class="row">
-                        <select id="pause-type" class="glass select">
+                        <select id="pause-type" class="glass drop">
                             <option value="Descanso">Descanso</option>
                             <option value="Lanche">Lanche</option>
                             <option value="Particular">Particular</option>
                         </select>
                         <button class="btn btn-warning" onclick="startPause()">Pausa</button>
-                        <button class="btn btn-danger" onclick="endPause()">Retornar</button>
                     </div>
+                    <button class="btn btn-danger" onclick="endPause()">Retornar</button>
                 </div>
             </div>
         </section>
@@ -72,7 +69,7 @@
         <section id="page-stats" class="page">
             <div class="stats-header">
                 <h2>Seus Resultados</h2>
-                <select id="stats-filter" class="glass select" onchange="updateStatsDisplay()">
+                <select id="stats-filter" class="glass drop" onchange="updateStatsDisplay()">
                     <option value="today">Hoje</option>
                     <option value="week">Última Semana</option>
                     <option value="month">Último Mês</option>
@@ -101,14 +98,26 @@
         </section>
     </main>
 
+    <div id="modal-motivos" class="modal-overlay">
+        <div class="modal-content glass">
+            <h3>Motivo do Cancelamento</h3>
+            <div class="motivos-grid">
+                <button class="btn-m" onclick="confirmReason('Mudança de End.')">Mudança de End.</button>
+                <button class="btn-m" onclick="confirmReason('Concorrência')">Concorrência</button>
+                <button class="btn-m" onclick="confirmReason('Atendimento')">Atendimento</button>
+                <button class="btn-m" onclick="confirmReason('Produto')">Produto</button>
+                <button class="btn-m" onclick="confirmReason('Outros')">Outros</button>
+                <button class="btn-m btn-021" onclick="confirmReason('021')">021</button>
+            </div>
+        </div>
+    </div>
+
     <nav class="bottom-nav">
         <button onclick="showPage('home')" class="nav-item active" id="nav-home">Home</button>
         <button onclick="showPage('stats')" class="nav-item" id="nav-stats">Estatísticas</button>
     </nav>
 
     <script src="https://unpkg.com/gsap@3/dist/gsap.min.js"></script>
-    
     <script src="script.js"></script>
-    
 </body>
 </html>

@@ -182,8 +182,36 @@ main { padding: 80px 20px 100px; height: 100%; overflow-y: auto; }
 .btn-warning { background: var(--warning); color: white; }
 .btn-glass { background: rgba(255, 255, 255 , .05); color: var(--text); }
 
-.select {
-    color: var(--text);
+.btn-m {
+    position: relative;
+    /* Parte do pseudo-elemento ::after */
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    padding: 12px 5px;
+    border-radius: 10px;
+    font-size: 0.8em;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-m.confirming {
+    border-color: rgba(255, 255, 255, 0.2);
+    font-weight: bold;
+}
+
+.btn-021 {
+    background: rgba(255, 0, 0, 0.15);
+    border-color: rgba(255, 0, 0, 0.3);
+}
+
+.drop {
+    color: var(--t);
+}
+
+#pause-type {
+    width: 50%;
 }
 
 .row { display: flex; gap: 10px; width: 100%; }
@@ -256,6 +284,40 @@ select.glass { border: none; padding: 10px; border-radius: 10px; appearance: non
     transform:translateX(-100%);
     animation:confirmSlide 2.5s linear forwards
 }
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    padding: 20px;
+}
+
+.modal-content {
+    width: 100%;
+    max-width: 350px;
+    padding: 25px;
+    text-align: center;
+    border: var(--glass-border);
+}
+
+.modal-content h3 {
+    margin-bottom: 20px;
+    font-weight: 300;
+}
+
+.motivos-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+
+
 @keyframes confirmSlide{
     to{transform:translateX(0)}
 }
