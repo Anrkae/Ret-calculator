@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Histórico de Ligações</title>
+
+<style>
+  * {
+    box-sizing: border-box;
+    font-family: Inter, system-ui, sans-serif;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: radial-gradient(circle at top, #0f2027, #000);
+    color: #fff;
+  }
+
+  .container {
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 20px;
+  }
+
+  h1 {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+
+  .day-group {
+    margin-bottom: 32px;
+  }
+
+  .day-title {
+    font-size: 18px;
+    opacity: 0.85;
+    margin-bottom: 12px;
+    text-transform: capitalize;
+  }
+
+  .call-card {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 16px;
+    align-items: center;
+    padding: 14px 18px;
+    margin-bottom: 10px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.12);
+  }
+
+  .call-card.retido { border-left: 5px solid #2ecc71; }
+  .call-card.cancelado { border-left: 5px solid #f1c40f; }
+  .call-card.improdutivo { border-left: 5px solid #e74c3c; }
+
+  .call-time {
+    font-size: 14px;
+    opacity: 0.9;
+  }
+
+  .call-time small {
+    display: block;
+    opacity: 0.6;
+  }
+
+  .call-duration {
+    font-weight: bold;
+    font-size: 15px;
+  }
+
+  .call-result {
+    font-size: 12px;
+    text-transform: uppercase;
+    opacity: 0.8;
+  }
+
+  .empty {
+    text-align: center;
+    opacity: 0.6;
+    margin-top: 80px;
+    font-size: 16px;
+  }
+</style>
+</head>
+
+<body>
+
+<div class="container">
+  <h1>📞 Histórico de Ligações</h1>
+  <div id="history"></div>
+</div>
+
+<script>
+  // === CARREGA DADOS DO LOCALSTORAGE ===
+  const data = JSON.parse(localStorage.getItem('claro_data')) || { calls: [] };
+  const container = document.getElementById('history');
+
+  if (!data.calls.length) {
+    container.innerHTML = '<div class="empty">Nenhuma ligação registrada 📭</div>';
+  } else {
+    renderHistory(data.calls);
+  }
+
+  // === FUNÇÕES ===
+
+  function renderHistory(calls) {
+    const grouped = groupByDay(calls);
+
+    Object.keys(grouped)
+      .sort((a, b) => new Date(b) - new Date(a))
+      .forEach(day => {
+        const group = document.createElement('div');
+        group.className = 'day-group';
+
+        group.innerHTML = `
+          <div class="day-title">${formatDate(day)}</div>
+          ${grouped[day].map(renderCall).join('')}
+        `;
+
+        container.appendChild(group);
+      });
+  }
+
+  function groupByDay(calls) {
+    return calls.reduce((acc, call) => {
+      const day = new Date(call.timestamp).toDateString();
+      acc[day] = acc[day] || [];
+      acc[day].push(call);
+      return acc;
+    }, {});
+  }
+
+  function renderCall(call) {
+    return `
+      <div class="call-card ${call.result}">
+        <div class="call-time">
+          ${new Date(call.timestamp).toLocaleTimeString()}
+          ${call.reason ? `<small>Motivo: ${call.reason}</small>` : ''}
+        </div>
+        <div class="call-duration">${formatTime(call.duration)}</div>
+        <div class="call-result">${call.result}</div>
+      </div>
+    `;
+  }
+
+  function formatTime(sec) {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  }
+
+  function formatDate(dateStr) {
+    return new Date(dateStr).toLocaleDateString('pt-BR', {
+      weekday: 'long',
+      day: '2-digit',
+      month: 'long'
+    });
+  }
+</script>
+
+</body>
+</html>
