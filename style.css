@@ -17,6 +17,7 @@
 }
 
 * {
+    
     scrollbar-width: none;
     -ms-overflow-style: none;
     
@@ -42,6 +43,7 @@ body {
     background: #1C1C1C;
     color: var(--text);
     padding: 0;
+    width: 100vw;
 }
 
 .none { display: none !important}
@@ -62,7 +64,7 @@ body {
     flex: 0 0 40%
 }
 
-.carrossel {
+.carrossel, .card-principal {
     display: flex;
     justify-content: space-evenly;
     width: 100%;
@@ -73,10 +75,6 @@ body {
     backdrop-filter: blur(5px);
     -webkit-backdrop-filter: blur(5px);
     border-radius: var(--radius);
-}
-
-.card-principal {
-    padding: 40px;
 }
 
 .card {
@@ -334,11 +332,9 @@ select.glass { border: none; padding: 10px; border-radius: 10px; appearance: non
 
 
 @media (max-width: 600px) {
-    .card-principal {
-        margin-right: 15px !important;
-        display: flex;
-    }
-    .carrossel {
+    
+    .home-content { display: flex; flex-direction: column; padding: 0 !important;}
+    .carrossel, .card-principal {
         width: 100%;
         overflow-x: auto;
         gap: 1em;
@@ -347,20 +343,16 @@ select.glass { border: none; padding: 10px; border-radius: 10px; appearance: non
         scroll-snap-type: x mandatory;
         scroll-marker-group: after;
     }
+    .card-principal {touch-action: pan-y;}
     .carrossel::scroll-marker-group {
         display: flex;
         justify-content: center;
         gap: .5em;
         margin-bottom: 18px;
     }
-    
-    .card-principal {
-        padding: 0;
-    }
 
     .card {
         scroll-snap-align: center;
-        max-width: 75%;
         aspect-ratio: 5 / 1 !important;
         flex: 0 0 100%;
     }
@@ -378,9 +370,9 @@ select.glass { border: none; padding: 10px; border-radius: 10px; appearance: non
         flex-direction: column;
         gap: 1em;
     }
-    .btn-atender, .btn-desligar, .btn-minimizar {
-        width: 50 !important;
-        height: 50 !important;
+    .btn-atender, .btn-desligar, .btn-minimizar{
+        width: 50px !important;
+        height: 50px !important;
     }
     .telefone {
         position: fixed;
