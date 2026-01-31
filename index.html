@@ -40,21 +40,6 @@
         </div>
 
         <section id="page-home" class="page active">
-            <div class="control-group dv">
-                <button class="btn btn-glass" id="btn-shift" onclick="toggleShift()">Iniciar Jornada</button>
-
-                <div class="row">
-                    <select id="pause-type" class="glass drop none" data-animate="4">
-                        <option value="Descanso">Descanso</option>
-                        <option value="Lanche">Lanche</option>
-                        <option value="Particular">Particular</option>
-                    </select>
-                    <button class="btn btn-pausa none" onclick="startPause()" data-animate="5">Pausa</button>
-                </div>
-
-                <button class="btn btn-retornar none" onclick="endPause()" data-animate="6">Retornar</button>
-            </div>
-
             <div class="home-content none" data-animate="7">
                 <div class="card-principal">
                     <div class="timer-container glass card">
@@ -73,6 +58,21 @@
                         <p>TMA</p>
                     </div>
                 </div>
+            </div>
+            
+            <div class="control-group dv">
+                <button class="btn btn-glass" id="btn-shift" onclick="toggleShift()">Iniciar Jornada</button>
+                
+                <div class="row">
+                    <select id="pause-type" class="glass drop none" data-animate="4">
+                        <option value="Descanso">Descanso</option>
+                        <option value="Lanche">Lanche</option>
+                        <option value="Particular">Particular</option>
+                    </select>
+                    <button class="btn btn-pausa none" onclick="startPause()" data-animate="5">Pausa</button>
+                </div>
+                
+                <button class="btn btn-retornar none" onclick="endPause()" data-animate="6">Retornar</button>
             </div>
         </section>
 
