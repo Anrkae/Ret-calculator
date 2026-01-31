@@ -215,10 +215,10 @@ function updateSnippetIcon() {
     const snippet = document.getElementById('jackin-snippet');
     const btn = document.getElementById('toggle-snippet');
     if (snippet.classList.contains('minimized')) {
-        btn.innerHTML = '<i class="fa-solid fa-stopwatch"></i>';
+        btn.innerHTML = `<img src="svg/timer.svg" class="icon-svg" alt="Fechar">`;
         btn.style.color = isShiftActive ? '#00ff6a' : '#fff';
     } else {
-        btn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+        btn.innerHTML = `<img src="svg/xmark.svg" class="icon-svg" alt="Timer">`;
         btn.style.color = '';
     }
 }
