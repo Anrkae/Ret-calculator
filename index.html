@@ -9,59 +9,66 @@
 </head>
 <body>
 
-    <header id="jackin-snippet" class="glass status-off minimized">
+    <header id="jackin-snippet" class="glass status-off" data-animate="1">
         <div class="snippet-content">
             <div class="status-info">
                 <span id="shift-status">Off-line</span>
                 <span id="session-timer">00:00:00</span>
             </div>
-            <div class="active-break" id="active-break-display" style="display: none;">
+            <div class="active-break none" id="active-break-display" data-animate="2">
                 <span class="dot"></span> Em Pausa: <span id="break-timer">00:00</span>
             </div>
         </div>
-        <button id="toggle-snippet" onclick="toggleSnippet()"><img src="svg/timer.svg" alt="Fechar" class="icon-x"></button>
+        <button id="toggle-snippet" onclick="toggleSnippet()">
+            <img src="svg/xmark.svg" alt="Fechar" class="icon-x">
+        </button>
     </header>
 
     <main id="app">
-        <section id="page-home" class="page active">
-            <div class="card-principal">
-                <div class="timer-container glass card">
-                    <h2 id="call-display">00:00</h2>
-                    <p>Tempo de Ligação</p>
-                </div>
+        <div class="controles none" data-animate="3">
+            <div class="control-group telefone">
+                <button class="btn-atender" onclick="startCall()">
+                    <img src="svg/atender.svg">
+                </button>
+                <button class="btn-desligar" onclick="endCall('retido')">
+                    <img src="svg/desligar.svg">
+                </button>
             </div>
-            <div class="carrossel">
-                <div class="desc-container glass card">
-                    <h2 id="desc-display">0</h2>
-                    <p>Desconexões</p>
+        </div>
+
+        <section id="page-home" class="page active">
+            <div class="control-group dv">
+                <button class="btn btn-glass" id="btn-shift" onclick="toggleShift()">Iniciar Jornada</button>
+
+                <div class="row">
+                    <select id="pause-type" class="glass drop none" data-animate="4">
+                        <option value="Descanso">Descanso</option>
+                        <option value="Lanche">Lanche</option>
+                        <option value="Particular">Particular</option>
+                    </select>
+                    <button class="btn btn-pausa none" onclick="startPause()" data-animate="5">Pausa</button>
                 </div>
-                <div class="tma-container glass card">
-                    <h2 id="tma-display">0</h2>
-                    <p>TMA</p>
-                </div>
+
+                <button class="btn btn-retornar none" onclick="endPause()" data-animate="6">Retornar</button>
             </div>
 
-            <div class="controles">
-                <div class="control-group dv">
-                    <button class="btn btn-primary" onclick="startCall()">Iniciar Ligação</button>
-                    <div class="row">
-                        <button class="btn btn-success" onclick="endCall('retido')">Retido</button>
-                        <button class="btn btn-danger" onclick="endCall('cancelado')">Cancelado</button>
+            <div class="home-content none" data-animate="7">
+                <div class="card-principal">
+                    <div class="timer-container glass card">
+                        <h2 id="call-display">00:00</h2>
+                        <p>Tempo de Ligação</p>
                     </div>
-                    <button class="btn btn-glass" style="margin-top: 10px; border: 1px solid rgba(255,255,255,0.1);" onclick="endCall('improdutivo')">Improdutivo</button>
                 </div>
-    
-                <div class="control-group dv">
-                    <button class="btn btn-glass" id="btn-shift" onclick="toggleShift()">Iniciar Jornada</button>
-                    <div class="row">
-                        <select id="pause-type" class="glass drop">
-                            <option value="Descanso">Descanso</option>
-                            <option value="Lanche">Lanche</option>
-                            <option value="Particular">Particular</option>
-                        </select>
-                        <button class="btn btn-warning" onclick="startPause()">Pausa</button>
+
+                <div class="carrossel">
+                    <div class="desc-container glass card">
+                        <h2 id="desc-display">0</h2>
+                        <p>Desconexões</p>
                     </div>
-                    <button class="btn btn-danger" onclick="endPause()">Retornar</button>
+                    <div class="tma-container glass card">
+                        <h2 id="tma-display">0</h2>
+                        <p>TMA</p>
+                    </div>
                 </div>
             </div>
         </section>
@@ -112,12 +119,13 @@
         </div>
     </div>
 
-    <nav class="bottom-nav">
+    <nav class="bottom-nav none" data-animate="8">
         <button onclick="showPage('home')" class="nav-item active" id="nav-home">Home</button>
         <button onclick="showPage('stats')" class="nav-item" id="nav-stats">Estatísticas</button>
     </nav>
 
     <script src="https://unpkg.com/gsap@3/dist/gsap.min.js"></script>
     <script src="script.js"></script>
+
 </body>
 </html>

@@ -1,20 +1,14 @@
 :root {
-    --bg-color: #1C1C1C;
     --glass-bg: rgba(255, 255, 255, 0.04);
-    --glass-border: 2px solid rgba(255, 255, 255, 0.03);
+    --glass-border: 2px solid rgba(255, 255, 255, 0.02);
     --primary: red;
     --success: #34C759;
-    --danger: rgba(255, 255, 255, 0.03);
     --warning: #FF9500;
     --text: #fff;
     --radius: 14px;
     --margin: 18px;
-}
-
-/* Chrome, Edge, Safari */
-::-webkit-scrollbar {
-    width: 0px;
-    height: 0px;
+    --shadows: 2px 4px 10px 0 rgba(0, 0, 0, 0.1);
+    --border: 3px solid #fff;
 }
 
 ::-webkit-scrollbar {
@@ -38,7 +32,11 @@
     outline: none;
 }
 
-* { margin: 0; padding: 0; box-box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+* { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
 
 body {
     background: #1C1C1C;
@@ -46,10 +44,12 @@ body {
     padding: 0;
 }
 
+.none { display: none !important}
+
 .controles {
     display: flex;
     justify-content: space-evenly;
-    width: 100wh;
+    width: 100%;
 }
 .dv {
     border-radius: var(--radius);
@@ -65,7 +65,7 @@ body {
 .carrossel {
     display: flex;
     justify-content: space-evenly;
-    width: 100wh;
+    width: 100%;
 }
 
 .glass {
@@ -150,9 +150,7 @@ header.minimized {
 }
 
 header.minimized #toggle-snippet {
-    transform: scale(1.5);
     translate: 35%;
-    background: none;
 }
 
 .status-info { display: flex; gap: 15px; font-weight: 600; font-size: 0.9em; }
@@ -163,10 +161,18 @@ main { padding: 80px 20px 100px; height: 100%; overflow-y: auto; }
 .page { display: none; }
 .page.active { display: flex; flex-direction: column; gap: 20px; }
 
+.row {
+    display: flex;
+    width: 100%;
+    gap: 1em;
+}
+
 /* Inputs */
 .btn {
+    box-shadow: var(--shadows);
     border: none;
     padding: 15px;
+    height: 60px;
     border-radius: var(--radius);
     font-weight: 600;
     cursor: pointer;
@@ -174,12 +180,17 @@ main { padding: 80px 20px 100px; height: 100%; overflow-y: auto; }
     flex: 1;
 }
 
+.btn-atender, .btn-desligar {
+    border-radius: var(--radius);
+    height: 50px;
+    width: 50px;
+    border: none;
+}
+.btn-atender { background: var(--success); }
+.btn-desligar { background: var(--primary); }
+.btn-pausa { background: var(--warning); color: white; border: var(--glass-border); }
+.btn-retornar { background: var(--glass-bg); color: var(--text); border: var(--glass-border); flex: 0 0 100%; }
 .btn:active { opacity: 0.7; }
-
-.btn-primary { background: var(--primary); color: white; }
-.btn-success { background: var(--success); color: white; }
-.btn-danger { background: var(--danger); color: white; }
-.btn-warning { background: var(--warning); color: white; }
 .btn-glass { background: rgba(255, 255, 255 , .05); color: var(--text); }
 
 .btn-m {
@@ -207,14 +218,12 @@ main { padding: 80px 20px 100px; height: 100%; overflow-y: auto; }
 }
 
 .drop {
-    color: var(--t);
+    color: var(--text);
 }
 
 #pause-type {
     width: 50%;
 }
-
-.row { display: flex; gap: 10px; width: 100%; }
 
 .control-group { display: flex; flex-direction: column; gap: 12px;
 flex: 0 0 40%;
@@ -329,7 +338,7 @@ select.glass { border: none; padding: 10px; border-radius: 10px; appearance: non
         display: flex;
     }
     .carrossel {
-        width: 100wh;
+        width: 100%;
         overflow-x: auto;
         gap: 1em;
         scroll-behavior: smooth;
@@ -367,5 +376,22 @@ select.glass { border: none; padding: 10px; border-radius: 10px; appearance: non
     .controles {
         flex-direction: column;
         gap: 1em;
+    }
+    .btn-atender, .btn-desligar {
+        width: 50px !important;
+        height: 50px !important;
+    }
+    .telefone {
+        position: fixed;
+        bottom: 100px;
+        left: 0%;
+        z-index: 100;
+        border-radius: 0 var(--radius) var(--radius) 0;
+        border-right: var(--border);
+        backdrop-filter: blur(5px);
+        -webkit-backdrop-filter: blur(5px);
+        border-color: white;
+        padding: 12px;
+        background-color: var(--glass-bg);
     }
 }
