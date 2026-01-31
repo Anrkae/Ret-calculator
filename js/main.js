@@ -1,217 +1,334 @@
 import { animarEntradaFluxo } from './animations.js';
 
+// Variáveis de estado
 let callStartTime, callInterval;
 let shiftStartTime, shiftInterval;
 let pauseStartTime, pauseInterval;
 let isCallActive = false;
 let isShiftActive = false;
 let isPauseActive = false;
+let isPausePending = false; 
 let pendingCallData = null;
 
-let db = JSON.parse(localStorage.getItem('claro_data')) || {
-    calls: [],
-    shifts: [],
-    pauses: []
+// Banco de dados e Estado Persistente
+let db = JSON.parse(localStorage.getItem('claro_data')) || { calls: [], shifts: [], pauses: [] };
+let session = JSON.parse(localStorage.getItem('claro_session')) || { 
+    shiftStart: null, 
+    pauseStart: null, 
+    isShiftActive: false, 
+    isPauseActive: false,
+    pendingCall: null 
 };
 
-// --- FUNÇÕES GLOBAIS ---
+// --- CORE: PERSISTÊNCIA E SESSÃO ---
 
-window.toast = function(msg){
-    const t=document.createElement('div');
-    t.className='toast'; t.innerText=msg;
-    document.body.appendChild(t);
-    requestAnimationFrame(()=>t.classList.add('show'));
-    setTimeout(()=>{
-        t.classList.remove('show');
-        setTimeout(()=>t.remove(),300);
-    },2500);
+function saveSession() {
+    const sessionData = { 
+        isShiftActive, isPauseActive, 
+        shiftStart: shiftStartTime, 
+        pauseStart: pauseStartTime, 
+        pendingCall: pendingCallData 
+    };
+    localStorage.setItem('claro_session', JSON.stringify(sessionData));
 }
 
-window.requireConfirm = function(btn, key){
-    if(btn.dataset.confirm === key){
-        clearTimeout(btn._confirmTimeout);
-        gsap.killTweensOf(btn);
-        btn.classList.remove('confirming');
-        if (key !== 'retido') btn.innerText = btn.dataset.originalText; // Não mexe no texto se for o botão de desligar
-        delete btn.dataset.confirm;
-        return true;
+function restoreSession() {
+    if (session.isShiftActive) {
+        const isToday = new Date(session.shiftStart).toDateString() === new Date().toDateString();
+        if (isToday) {
+            vincularJornada(session.shiftStart);
+        } else {
+            isShiftActive = false;
+            saveSession();
+        }
     }
-    btn.dataset.confirm = key;
-    btn.dataset.originalText = btn.innerText;
-    if (key !== 'retido') { // Evita trocar o ícone do telefone por texto "Confirmar"
-        gsap.to(btn,{ opacity:0, duration:0.15, onComplete:()=>{
-            btn.innerText='Confirmar';
-            gsap.to(btn,{opacity:1,duration:0.15});
-        }});
+
+    if (session.isPauseActive) {
+        isPauseActive = true;
+        pauseStartTime = session.pauseStart;
+        document.getElementById('active-break-display').classList.remove('none');
+        pauseInterval = setInterval(updatePauseTimer, 1000);
     }
-    btn.classList.add('confirming');
-    btn._confirmTimeout=setTimeout(()=>{
-        btn.classList.remove('confirming');
-        if (key !== 'retido') btn.innerText=btn.dataset.originalText;
-        delete btn.dataset.confirm;
-    },2500);
-    return false;
+
+    if (session.pendingCall) {
+        pendingCallData = session.pendingCall;
+        document.getElementById('modal-tabulacao').style.display = 'flex';
+    }
+
+    animarEntradaFluxo(isShiftActive, isPauseActive, false);
+    syncTelefoniaUI(false); 
+    updateHomeCards();
+    updateSnippetIcon();
 }
 
-// ATUALIZAÇÃO AO CLICAR NA BOTTOM NAV
-window.showPage = function(pageId){
-    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-    document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-    document.getElementById(`page-${pageId}`).classList.add('active');
-    document.getElementById(`nav-${pageId}`).classList.add('active');
-    
-    // Se clicou em estatísticas, atualiza os timers uma única vez
-    if(pageId==='stats') window.updateStatsDisplay();
-}
+// --- INTERFACE (Animações e 360) ---
 
-// --- LIGAÇÃO E TABULAÇÃO ---
+function syncTelefoniaUI(animate = true) {
+    const telContainer = document.querySelector('.telefone');
+    const btnAtender = document.querySelector('.btn-atender');
+    const btnDesligar = document.querySelector('.btn-desligar');
+    const minimizarTel = document.getElementById('minimizar-tel');
 
-window.startCall = function(){
-    if(!isShiftActive || isPauseActive || isCallActive) return;
-    isCallActive=true;
-    callStartTime=Date.now();
-    callInterval=setInterval(updateCallTimer,1000);
-}
+    const updateVisibility = () => {
+        btnAtender.classList.add('none');
+        btnDesligar.classList.add('none');
+        minimizarTel.classList.add('none');
 
-window.endCall = function(result){
-    if(!isCallActive) return;
-    const btn=event.currentTarget;
-    if(!window.requireConfirm(btn, result)) return; // 'result' aqui no seu HTML é 'retido'
+        if (!isShiftActive) return;
+        if (isPauseActive) { minimizarTel.classList.remove('none'); }
+        else if (isCallActive) { btnDesligar.classList.remove('none'); }
+        else { btnAtender.classList.remove('none'); }
+    };
 
-    clearInterval(callInterval);
-    const duration = Math.floor((Date.now()-callStartTime)/1000);
-    pendingCallData = { timestamp: new Date().toISOString(), duration: duration };
-
-    abrirModalTabulacao();
-}
-
-function abrirModalTabulacao() {
-    document.getElementById('modal-tabulacao').style.display = 'flex';
-    document.getElementById('step-resultado').classList.remove('none');
-    document.getElementById('step-motivos').classList.add('none');
-}
-
-window.handleTabulacao = function(tipo) {
-    if (tipo === 'cancelado') {
-        document.getElementById('step-resultado').classList.add('none');
-        document.getElementById('step-motivos').classList.remove('none');
+    if (animate && telContainer) {
+        gsap.to(telContainer, {
+            rotation: "+=360", duration: 0.6, ease: "back.inOut(1.7)",
+            onStart: () => setTimeout(updateVisibility, 300) 
+        });
     } else {
-        finalizeRecord(tipo, null);
-        document.getElementById('modal-tabulacao').style.display = 'none';
+        updateVisibility();
     }
 }
 
-window.confirmFinalReason = function(reason) {
-    const res = (reason === '021') ? 'improdutivo' : 'cancelado';
-    finalizeRecord(res, reason);
-    document.getElementById('modal-tabulacao').style.display = 'none';
+window.toggleSnippet = function() {
+    const snippet = document.getElementById('jackin-snippet');
+    gsap.to(snippet, {
+        rotation: "+=360", duration: 0.6, ease: "power2.inOut",
+        onStart: () => {
+            setTimeout(() => {
+                snippet.classList.toggle('minimized');
+                window.updateSnippetIcon();
+            }, 300);
+        }
+    });
+};
+
+window.updateSnippetIcon = function() {
+    const btn = document.getElementById('toggle-snippet');
+    const isMin = document.getElementById('jackin-snippet').classList.contains('minimized');
+    if (!btn) return;
+    btn.innerHTML = isMin 
+        ? `<img src="svg/timer.svg" class="icon-svg" style="width:20px">`
+        : `<img src="svg/xmark.svg" class="icon-svg" style="width:16px">`;
+};
+
+// --- JORNADA ---
+
+function vincularJornada(startTime) {
+    isShiftActive = true;
+    shiftStartTime = startTime;
+    const btn = document.getElementById('btn-shift');
+    btn.innerText = 'Encerrar Jornada';
+    btn.classList.replace('btn-glass', 'btn-danger');
+    document.getElementById('shift-status').innerText = 'Em Jornada';
+    document.getElementById('jackin-snippet').classList.replace('status-off', 'status-on');
+    document.getElementById('pause-type').classList.remove('none');
+    document.querySelector('.btn-pausa').classList.remove('none');
+    shiftInterval = setInterval(updateShiftTimer, 1000);
 }
+
+window.toggleShift = function() {
+    const btn = document.getElementById('btn-shift');
+    if (isShiftActive && !window.requireConfirm(btn, 'shift')) return;
+
+    if (!isShiftActive) {
+        const today = new Date().toDateString();
+        const jornadaExistente = db.shifts.find(s => new Date(s.start).toDateString() === today);
+
+        if (jornadaExistente) {
+            window.toast("Retomando jornada de hoje...");
+            vincularJornada(jornadaExistente.start);
+            db.shifts = db.shifts.filter(s => s !== jornadaExistente);
+        } else {
+            vincularJornada(Date.now());
+        }
+        animarEntradaFluxo(true, false, false);
+    } else {
+        encerrarJornada();
+    }
+    syncTelefoniaUI(true);
+    saveSession();
+    saveData();
+};
+
+function encerrarJornada() {
+    if (pendingCallData) finalizeRecord('improdutivo', 'fechamento_forçado');
+    if (isCallActive) {
+        clearInterval(callInterval);
+        pendingCallData = { timestamp: new Date().toISOString(), duration: Math.floor((Date.now() - callStartTime) / 1000) };
+        finalizeRecord('retido', null);
+    }
+    if (isPauseActive) window.endPause(true);
+    
+    clearInterval(shiftInterval);
+    db.shifts.push({ start: shiftStartTime, end: Date.now() });
+    isShiftActive = false;
+
+    const btn = document.getElementById('btn-shift');
+    btn.innerText = 'Iniciar Jornada';
+    btn.classList.replace('btn-danger', 'btn-glass');
+    document.getElementById('shift-status').innerText = 'Off-line';
+    document.getElementById('jackin-snippet').classList.replace('status-on', 'status-off');
+    document.getElementById('pause-type').classList.add('none');
+    document.querySelector('.btn-pausa').classList.add('none');
+    animarEntradaFluxo(false, false, false);
+}
+
+// --- PAUSA E LIGAÇÕES ---
+
+window.startPause = function() {
+    if (!isShiftActive || isPauseActive || pendingCallData) return;
+    if (isPausePending) { isPausePending = false; window.toast('Pausa cancelada'); updatePauseBtnUI(); return; }
+    if (isCallActive) { isPausePending = true; window.toast('Pausa agendada!'); updatePauseBtnUI(); return; }
+    if (!window.requireConfirm(event.currentTarget, 'pause')) return;
+    executarInicioPausa();
+};
+
+function executarInicioPausa() {
+    isPauseActive = true; pauseStartTime = Date.now();
+    document.getElementById('active-break-display').classList.remove('none');
+    pauseInterval = setInterval(updatePauseTimer, 1000);
+    syncTelefoniaUI(true); animarEntradaFluxo(true, true, true);
+    updatePauseBtnUI(); saveSession();
+}
+
+window.endPause = function(force) {
+    if (!isPauseActive) return;
+    if (!force && !window.requireConfirm(event.currentTarget, 'return')) return;
+    clearInterval(pauseInterval);
+    db.pauses.push({ type: document.getElementById('pause-type').value, start: pauseStartTime, end: Date.now() });
+    isPauseActive = false;
+    document.getElementById('active-break-display').classList.add('none');
+    syncTelefoniaUI(true); animarEntradaFluxo(true, false, true);
+    saveSession(); saveData();
+};
+
+window.startCall = function() {
+    if (!isShiftActive || isPauseActive || isCallActive || pendingCallData) return;
+    isCallActive = true; callStartTime = Date.now();
+    callInterval = setInterval(updateCallTimer, 1000);
+    syncTelefoniaUI(true); saveSession();
+};
+
+window.endCall = function(result) {
+    if (!isCallActive) return;
+    if (!window.requireConfirm(event.currentTarget, result)) return;
+    clearInterval(callInterval);
+    pendingCallData = { timestamp: new Date().toISOString(), duration: Math.floor((Date.now() - callStartTime) / 1000) };
+    isCallActive = false;
+    document.getElementById('modal-tabulacao').style.display = 'flex';
+    syncTelefoniaUI(true); saveSession();
+};
 
 function finalizeRecord(result, reason) {
-    if(!pendingCallData) return;
-    pendingCallData.result = result;
-    pendingCallData.reason = reason;
-    db.calls.push(pendingCallData);
-    isCallActive=false;
-    pendingCallData = null;
-    document.getElementById('call-display').innerText='00:00';
-    saveData();
+    if (!pendingCallData) return;
+    pendingCallData.result = result; pendingCallData.reason = reason;
+    db.calls.push(pendingCallData); pendingCallData = null;
+    document.getElementById('modal-tabulacao').style.display = 'none';
+    document.getElementById('call-display').innerText = '00:00';
+    saveSession(); saveData();
+    if (isPausePending) { isPausePending = false; updatePauseBtnUI(); executarInicioPausa(); }
 }
 
-// --- ESTATÍSTICAS (SÓ RODA QUANDO CHAMADA) ---
+// --- AUXILIARES ---
 
-window.updateStatsDisplay = function(){
-    const filter=document.getElementById('stats-filter').value;
-    const now=Date.now();
-    let calls=db.calls.filter(c=>{
-        const d=new Date(c.timestamp);
-        if(filter==='today') return d.toDateString()===(new Date()).toDateString();
-        return true;
-    });
-
-    // 1. TMA em Segundos (Só números)
-    const totalSecs = calls.reduce((a,c)=>a+c.duration,0);
-    document.getElementById('stat-tma').innerText = calls.length ? Math.round(totalSecs/calls.length) : 0;
-
-    // 2. Tempo Logado (Cálculo na hora do click)
-    let loggedMs = db.shifts.reduce((a,s)=>a+(s.end-s.start),0);
-    if(isShiftActive) loggedMs += (now - shiftStartTime);
-    document.getElementById('stat-logged').innerText = formatHoursMinutesFromMs(loggedMs);
-
-    // 3. Pausas (Cálculo na hora do click)
-    let pauseMs = db.pauses.reduce((a,p)=>a+(p.end-p.start),0);
-    if(isPauseActive) pauseMs += (now - pauseStartTime);
-    document.getElementById('stat-pauses').innerText = formatHoursMinutesFromMs(pauseMs);
-
-    // 4. Desconexão
-    const valid = calls.filter(c => c.result === 'retido' || c.result === 'cancelado');
-    const cancels = calls.filter(c => c.result === 'cancelado').length;
-    document.getElementById('stat-disc').innerText = valid.length ? Math.round((cancels/valid.length)*100)+'%' : '0%';
+function updatePauseBtnUI() {
+    const btnPausa = document.querySelector('.btn-pausa');
+    if (!btnPausa) return;
+    btnPausa.innerText = isPausePending ? "Cancelar Pausa" : "Pausa";
+    isPausePending ? btnPausa.classList.add('btn-warning') : btnPausa.classList.remove('btn-warning');
 }
 
-// --- RESTO DA LÓGICA (SHIFTS/PAUSAS/AUX) ---
+function updateCallTimer() { document.getElementById('call-display').innerText = formatTime(Math.floor((Date.now()-callStartTime)/1000)); }
+function updateShiftTimer() { document.getElementById('session-timer').innerText = formatTimeFull(Math.floor((Date.now()-shiftStartTime)/1000)); }
+function updatePauseTimer() { document.getElementById('break-timer').innerText = formatTime(Math.floor((Date.now()-pauseStartTime)/1000)); }
 
-window.toggleShift = function(){
-    const btn=document.getElementById('btn-shift');
-    if(isShiftActive && !window.requireConfirm(btn,'shift')) return;
-    if(!isShiftActive){
-        isShiftActive=true; shiftStartTime=Date.now();
-        btn.innerText='Encerrar Jornada'; btn.classList.replace('btn-glass','btn-danger');
-        shiftInterval=setInterval(updateShiftTimer,1000);
-    } else {
-        if(isCallActive) finalizeRecord('retido', null);
-        if(isPauseActive) window.endPause(true);
-        clearInterval(shiftInterval);
-        db.shifts.push({start:shiftStartTime,end:Date.now()});
-        isShiftActive=false;
-        btn.innerText='Iniciar Jornada'; btn.classList.replace('btn-danger','btn-glass');
-    }
-    animarEntradaFluxo(isShiftActive, isPauseActive);
-    saveData();
-}
-
-window.startPause = function(){
-    if(!isShiftActive || isCallActive || isPauseActive) return;
-    if(!window.requireConfirm(event.currentTarget,'pause')) return;
-    isPauseActive=true; pauseStartTime=Date.now();
-    document.getElementById('active-break-display').classList.remove('none');
-    pauseInterval=setInterval(()=>{
-        document.getElementById('break-timer').innerText = formatTime(Math.floor((Date.now()-pauseStartTime)/1000));
-    },1000);
-    animarEntradaFluxo(isShiftActive, isPauseActive);
-}
-
-window.endPause = function(force){
-    if(!isPauseActive) return;
-    if(!force && !window.requireConfirm(event.currentTarget,'return')) return;
-    clearInterval(pauseInterval);
-    db.pauses.push({ type:document.getElementById('pause-type').value, start:pauseStartTime, end:Date.now() });
-    isPauseActive=false;
-    document.getElementById('active-break-display').classList.add('none');
-    animarEntradaFluxo(isShiftActive, isPauseActive);
-    saveData();
-}
-
-function updateCallTimer(){ document.getElementById('call-display').innerText=formatTime(Math.floor((Date.now()-callStartTime)/1000)); }
-function updateShiftTimer(){ document.getElementById('session-timer').innerText=formatTimeFull(Math.floor((Date.now()-shiftStartTime)/1000)); }
-function formatTime(s){ return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`; }
-function formatTimeFull(s){
-    const h=Math.floor(s/3600); const m=Math.floor((s%3600)/60);
+function formatTime(s) { return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`; }
+function formatTimeFull(s) {
+    const h = Math.floor(s/3600); const m = Math.floor((s%3600)/60);
     return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
 }
-function formatHoursMinutesFromMs(ms){
-    const total=Math.floor(ms/60000);
-    return `${Math.floor(total/60)}h ${total%60}m`;
-}
-function saveData(){ localStorage.setItem('claro_data',JSON.stringify(db)); updateHomeCards(); }
-function updateHomeCards(){
-    const calls=db.calls.filter(c=>new Date(c.timestamp).toDateString()===(new Date()).toDateString());
-    document.getElementById('desc-display').innerText = calls.filter(c=>c.result==='cancelado').length;
-    const total=calls.reduce((a,c)=>a+c.duration,0);
-    document.getElementById('tma-display').innerText = calls.length ? Math.round(total/calls.length) : 0;
+function formatHoursMinutesFromMs(ms) {
+    const totalMin = Math.floor(ms/60000);
+    return `${Math.floor(totalMin/60)}h ${totalMin%60}m`;
 }
 
-window.addEventListener('load',()=>{ 
-    saveData(); 
-    animarEntradaFluxo(false, false); 
-});
+function saveData() { localStorage.setItem('claro_data', JSON.stringify(db)); updateHomeCards(); updateStatsDisplay(); }
+
+function updateHomeCards() {
+    const calls = db.calls.filter(c => new Date(c.timestamp).toDateString() === (new Date()).toDateString());
+    document.getElementById('desc-display').innerText = calls.filter(c => c.result === 'cancelado').length;
+    const total = calls.reduce((a, c) => a + c.duration, 0);
+    document.getElementById('tma-display').innerText = calls.length ? Math.round(total / calls.length) : 0;
+}
+
+// --- ABA ESTATÍSTICAS (LÓGICA FINAL) ---
+
+window.updateStatsDisplay = function() {
+    const filter = document.getElementById('stats-filter').value;
+    const now = Date.now();
+    const isToday = filter === 'today';
+
+    // 1. Filtragem por período
+    let filteredCalls = db.calls.filter(c => {
+        const d = new Date(c.timestamp);
+        return isToday ? d.toDateString() === new Date().toDateString() : true;
+    });
+
+    // 2. Cálculo de dias únicos no intervalo (para as médias)
+    const daysWithActivity = [...new Set(db.shifts.map(s => new Date(s.start).toDateString()))].length || 1;
+
+    // INDICADOR: TMA (Sempre Média em Segundos)
+    const totalTmaSec = filteredCalls.reduce((a,c) => a + c.duration, 0);
+    document.getElementById('stat-tma').innerText = filteredCalls.length 
+        ? Math.round(totalTmaSec / filteredCalls.length) : 0;
+
+    // INDICADOR: DESCONEXÃO (Sempre Média %)
+    const validDesconexao = filteredCalls.filter(c => c.result === 'retido' || c.result === 'cancelado');
+    const totalCancels = filteredCalls.filter(c => c.result === 'cancelado').length;
+    document.getElementById('stat-disc').innerText = validDesconexao.length 
+        ? Math.round((totalCancels / validDesconexao.length) * 100) + '%' : '0%';
+
+    // INDICADOR: TEMPO LOGADO (Hoje = Soma | Consolidado = Média)
+    let rawLoggedMs = db.shifts.reduce((a,s) => a + (s.end - s.start), 0) + (isShiftActive ? (now - shiftStartTime) : 0);
+    let finalLoggedMs = isToday ? rawLoggedMs : (rawLoggedMs / daysWithActivity);
+    document.getElementById('stat-logged').innerText = formatHoursMinutesFromMs(finalLoggedMs);
+
+    // INDICADOR: PAUSAS (Hoje = Soma | Consolidado = Média | Formato 0h 0m)
+    let rawPauseMs = db.pauses.reduce((a,p) => a + (p.end - p.start), 0) + (isPauseActive ? (now - pauseStartTime) : 0);
+    let finalPauseMs = isToday ? rawPauseMs : (rawPauseMs / daysWithActivity);
+    document.getElementById('stat-pauses').innerText = formatHoursMinutesFromMs(finalPauseMs);
+};
+
+// --- NAVEGAÇÃO E MODAIS ---
+
+window.showPage = function(pageId) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById(`page-${pageId}`).classList.add('active');
+    document.getElementById(`nav-${pageId}`).classList.add('active');
+    if (pageId === 'stats') window.updateStatsDisplay();
+};
+
+window.handleTabulacao = function(tipo) {
+    tipo === 'cancelado' ? (document.getElementById('step-resultado').classList.add('none'), document.getElementById('step-motivos').classList.remove('none')) : finalizeRecord(tipo, null);
+};
+
+window.confirmFinalReason = function(reason) { finalizeRecord(reason === '021' ? 'improdutivo' : 'cancelado', reason); };
+
+window.requireConfirm = function(btn, key) {
+    if (btn.dataset.confirm === key) { btn.classList.remove('confirming'); delete btn.dataset.confirm; return true; }
+    btn.dataset.confirm = key; btn.classList.add('confirming');
+    setTimeout(() => { btn.classList.remove('confirming'); delete btn.dataset.confirm; }, 2500);
+    return false;
+};
+
+window.toast = function(msg) {
+    const t = document.createElement('div');
+    t.style = "position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.85);backdrop-filter:blur(5px);color:white;padding:12px 24px;border-radius:30px;z-index:10000;font-size:14px;box-shadow:0 4px 15px rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);";
+    t.innerText = msg; document.body.appendChild(t);
+    gsap.fromTo(t, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.3 });
+    setTimeout(() => { gsap.to(t, { opacity: 0, y: -20, onComplete: () => t.remove() }); }, 3000);
+};
+
+window.addEventListener('load', restoreSession);

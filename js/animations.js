@@ -1,57 +1,31 @@
-// js/animations.js
-
-export const animarEntradaFluxo = (ativa, emPausa) => {
-    // Seletores dos containers do seu HTML
-    const controles = document.querySelector('.controles');
-    const homeContent = document.querySelector('.home-content');
-    const bottomNav = document.querySelector('.bottom-nav');
-    
-    // Elementos internos
-    const telefone = document.querySelector('.telefone');
+export const animarEntradaFluxo = (ativa, emPausa, isUpdate = false) => {
     const rowPausa = document.querySelector('.row');
     const btnRetornar = document.querySelector('.btn-retornar');
-    const pauseSelect = document.querySelector('#pause-type');
-    const pauseBtn = document.querySelector('.btn-pausa');
 
     if (ativa) {
-        // 1. Revela containers (Remove display: none)
-        [controles, homeContent, bottomNav, telefone].forEach(el => el?.classList.remove('none'));
+        // Remove .none dos containers principais
+        document.querySelectorAll('.controles, .home-content, .bottom-nav, .telefone')
+                .forEach(el => el?.classList.remove('none'));
 
-        const tl = gsap.timeline();
+        // Só faz o "Pop" inicial se não for um simples update de estado
+        if (!isUpdate) {
+            gsap.fromTo(['.telefone', '.card-principal', '.carrossel', '.nav-item'], 
+                { scale: 0.8, opacity: 0 },
+                { scale: 1, opacity: 1, duration: 0.4, stagger: 0.05, ease: "back.out(1.5)" }
+            );
+        }
 
-        // 2. Animação Pop Satisfatória
-        tl.fromTo(['.telefone', '.card-principal', '.carrossel', '.nav-item'], 
-            { scale: 0.5, opacity: 0 },
-            { 
-                scale: 1, 
-                opacity: 1, 
-                duration: 0.5, 
-                stagger: 0.1, 
-                ease: "back.out(1.7)",
-                clearProps: "all" 
-            }
-        );
-
-        // 3. Controle da linha de Pausa
+        // Troca entre linha de pausa e botão de retorno
         if (emPausa) {
             rowPausa?.classList.add('none');
             btnRetornar?.classList.remove('none');
-            tl.fromTo(btnRetornar, { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, ease: "back.out(2)" }, "-=0.3");
+            gsap.fromTo(btnRetornar, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.3 });
         } else {
             btnRetornar?.classList.add('none');
             rowPausa?.classList.remove('none');
-            [pauseSelect, pauseBtn].forEach(el => el?.classList.remove('none'));
-            
-            tl.fromTo([pauseSelect, pauseBtn], 
-                { scale: 0, opacity: 0 }, 
-                { scale: 1, opacity: 1, stagger: 0.1, ease: "back.out(1.5)" }, 
-                "-=0.3"
-            );
+            gsap.fromTo(rowPausa, { y: -10, opacity: 0 }, { y: 0, opacity: 1, duration: 0.3 });
         }
     } else {
-        // 4. Esconde tudo ao encerrar jornada
-        [controles, homeContent, bottomNav, btnRetornar, rowPausa].forEach(el => {
-            el?.classList.add('none');
-        });
+        document.querySelectorAll('.controles, .home-content, .bottom-nav, .telefone').forEach(el => el?.classList.add('none'));
     }
 };

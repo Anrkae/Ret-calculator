@@ -180,7 +180,7 @@ main { padding: 80px 20px 100px; height: 100%; overflow-y: auto; }
     flex: 1;
 }
 
-.btn-atender, .btn-desligar {
+.btn-atender, .btn-desligar, .btn-minimizar {
     border-radius: var(--radius);
     height: 50px;
     width: 50px;
@@ -188,6 +188,7 @@ main { padding: 80px 20px 100px; height: 100%; overflow-y: auto; }
 }
 .btn-atender { background: var(--success); }
 .btn-desligar { background: var(--primary); }
+.btn-minimizar { background: var(--glass-bg); }
 .btn-pausa { background: var(--warning); color: white; border: var(--glass-border); }
 .btn-retornar { background: var(--glass-bg); color: var(--text); border: var(--glass-border); flex: 0 0 100%; }
 .btn:active { opacity: 0.7; }
@@ -377,9 +378,9 @@ select.glass { border: none; padding: 10px; border-radius: 10px; appearance: non
         flex-direction: column;
         gap: 1em;
     }
-    .btn-atender, .btn-desligar {
-        width: 50px !important;
-        height: 50px !important;
+    .btn-atender, .btn-desligar, .btn-minimizar {
+        width: 50 !important;
+        height: 50 !important;
     }
     .telefone {
         position: fixed;

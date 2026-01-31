@@ -27,12 +27,15 @@
     <main id="app">
         <div class="controles none" data-animate="3">
             <div class="control-group telefone">
-                <button class="btn-atender" onclick="startCall()">
-                    <img src="svg/atender.svg">
-                </button>
-                <button class="btn-desligar" onclick="endCall('retido')">
-                    <img src="svg/desligar.svg">
-                </button>
+                <div class="div-telefone">
+                    <button class="btn-atender" onclick="startCall()">
+                        <img src="svg/atender.svg">
+                    </button>
+                    <button class="btn-desligar none" onclick="endCall('retido')">
+                        <img src="svg/desligar.svg">
+                    </button>
+                    <img src="svg/pause.svg" id="minimizar-tel" class="btn-minimizar none">
+                </div>
             </div>
         </div>
 
