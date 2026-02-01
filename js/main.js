@@ -29,12 +29,12 @@ window.saveSession = function() {
     const sessionData = { 
         isShiftActive, 
         isPauseActive, 
-        isCallActive, // Item 2: Salva se a call está ativa
+        isCallActive, 
         isLogoutPending,
         isPausePending,
         shiftStart: shiftStartTime, 
         pauseStart: pauseStartTime, 
-        callStart: callStartTime, // Item 2: Salva o timestamp de início da call
+        callStart: callStartTime, 
         jackinStart: jackinStartTime,
         pendingCall: pendingCallData 
     };
@@ -47,8 +47,20 @@ window.saveData = function() {
     if(window.updateStatsDisplay) window.updateStatsDisplay(); 
 };
 
-function restoreSession() {
-    const localData = localStorage.getItem(getDataKey());
+// Alteração Item 4: Função assíncrona para buscar dados do Firebase se o LocalStorage falhar
+async function restoreSession() {
+    const matricula = getMatricula();
+    let localData = localStorage.getItem(getDataKey());
+    
+    // Se o LocalStorage estiver vazio, tenta buscar do Firebase antes de inicializar o db
+    if (!localData && window.fetchFromFirebase) {
+        const remoteData = await window.fetchFromFirebase();
+        if (remoteData) {
+            localStorage.setItem(getDataKey(), JSON.stringify(remoteData));
+            localData = JSON.stringify(remoteData);
+        }
+    }
+
     db = localData ? JSON.parse(localData) : { calls: [], shifts: [], pauses: [], jackinTime: 0 };
     
     const savedSession = JSON.parse(localStorage.getItem(getSessionKey()));
@@ -170,17 +182,16 @@ function vincularJornada(startTime, savedJackinStart) {
     window.shiftInterval = setInterval(updateShiftTimer, 1000);
 }
 
-window.toggleShift = function() {
+window.toggleShift = async function() {
     const btn = document.getElementById('btn-shift');
     
-    // Item 3: Se estiver em ligação, agenda o logout
     if (isShiftActive && isCallActive) {
         if (isLogoutPending) {
             isLogoutPending = false;
             window.toast("Logout cancelado");
         } else {
             isLogoutPending = true;
-            isPausePending = false; // Trava: Desloga cancela pausa agendada
+            isPausePending = false; 
             window.toast("Logout agendado para o fim da ligação");
         }
         updateLogoutBtnUI();
@@ -192,7 +203,7 @@ window.toggleShift = function() {
     if (isShiftActive && !window.requireConfirm(btn, 'shift')) return;
 
     if (!isShiftActive) {
-        restoreSession(); 
+        await restoreSession(); 
         const today = new Date().toDateString();
         const jornadaExistente = db.shifts.find(s => new Date(s.start).toDateString() === today);
 
@@ -255,7 +266,6 @@ window.encerrarJornada = function() {
 window.startPause = function() {
     if (!isShiftActive || isPauseActive || pendingCallData) return;
     
-    // Item 3: Trava de Logout Agendado
     if (isLogoutPending) {
         window.toast("Não é possível pausar com logout agendado");
         return;
@@ -313,12 +323,11 @@ window.endCall = function(result) {
     window.clearInterval(window.callInterval);
     pendingCallData = { timestamp: new Date().toISOString(), duration: Math.floor((Date.now() - callStartTime) / 1000) };
     isCallActive = false;
-    openTabulacaoModal(); // Função que reseta o modal
+    openTabulacaoModal(); 
     syncTelefoniaUI(true); 
     window.saveSession();
 };
 
-// Item 2: Resetar visual do modal sempre que abrir
 function openTabulacaoModal() {
     document.getElementById('step-resultado').classList.remove('none');
     document.getElementById('step-motivos').classList.add('none');
@@ -337,7 +346,6 @@ window.finalizeRecord = function(result, reason) {
     window.saveSession(); 
     window.saveData();
     
-    // Check de agendamentos pós-call
     if (isLogoutPending) {
         window.encerrarJornada();
     } else if (isPausePending) { 
@@ -467,8 +475,9 @@ window.toast = function(msg) {
     setTimeout(() => { gsap.to(t, { opacity: 0, y: -20, onComplete: () => t.remove() }); }, 3000);
 };
 
-window.addEventListener('load', () => {
+// Item 4: Carregamento inicial modificado para aguardar restoreSession assíncrono
+window.addEventListener('load', async () => {
     if (localStorage.getItem('claro_matricula')) {
-        restoreSession();
+        await restoreSession();
     }
 });

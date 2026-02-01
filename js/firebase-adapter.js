@@ -21,43 +21,39 @@ const getSessionKey = () => `claro_session_${getMatricula()}`;
 
 // --- ITEM 4 & 5: BUSCA INTELIGENTE DE DADOS ---
 
-async function loadDataFromFirebase() {
+// Função global para que o main.js possa esperar a resposta do Firebase
+window.fetchFromFirebase = async function() {
     const matricula = getMatricula();
-    if (!matricula) return;
+    if (!matricula) return null;
 
     const todayId = new Date().toISOString().split('T')[0];
     const docRef = doc(dbFirestore, "sessoes", `${todayId}_${matricula}`);
     
     try {
         const docSnap = await getDoc(docRef);
-        
-        // Item 4: Se não encontrar jornada do dia no LocalStorage, busca no Firebase
         if (docSnap.exists()) {
-            const remoteData = docSnap.data().historico;
-            const localData = JSON.parse(localStorage.getItem(getDataKey()));
-            
-            if (!localData || !localData.shifts.length) {
-                console.log("🔄 Restaurando jornada do dia via Firebase...");
-                localStorage.setItem(getDataKey(), JSON.stringify(remoteData));
-                // Recarrega o estado no main.js se necessário
-                if (typeof window.saveData === 'function') window.saveData();
-            }
+            console.log("✅ Dados recuperados do Firebase.");
+            return docSnap.data().historico;
         }
-        
-        // Item 5: Sempre buscar histórico para as estatísticas (simulação de carregamento de histórico)
-        // Nota: O gráfico de estatísticas agora pode usar dados consolidados do Firebase se você expandir a query.
-        console.log("📊 Histórico sincronizado com Firebase para Estatísticas.");
-        
     } catch (e) {
         console.error("Erro ao buscar dados no Firebase:", e);
     }
-}
+    return null;
+};
 
 async function syncToFirebase() {
     const matricula = getMatricula();
     if (!auth.currentUser || !matricula) return;
 
-    const data = JSON.parse(localStorage.getItem(getDataKey())) || { calls: [], shifts: [], pauses: [], jackinTime: 0 };
+    const data = JSON.parse(localStorage.getItem(getDataKey()));
+    
+    // PROTEÇÃO CRUCIAL: Não sincroniza se os dados locais estiverem vazios/zerados
+    // Isso evita que um localStorage limpo apague uma jornada ativa no Firebase
+    if (!data || (!data.calls.length && !data.shifts.length && !data.jackinTime)) {
+        console.log("⚠️ Sync abortado: Dados locais vazios para evitar sobrescrita.");
+        return; 
+    }
+
     const sessionLocal = JSON.parse(localStorage.getItem(getSessionKey())) || {};
     const todayId = new Date().toISOString().split('T')[0];
 
@@ -80,19 +76,15 @@ async function executeSecureLogout() {
     if (loader) loader.style.display = 'flex';
 
     try {
-        // 1. Garantir sincronização final
+        // 1. Garantir sincronização final antes de limpar tudo
         await syncToFirebase();
         
         // 2. Limpar Timers e Intervalos
-        const killIntervals = () => {
-            window.clearInterval(window.shiftInterval);
-            window.clearInterval(window.pauseInterval);
-            window.clearInterval(window.callInterval);
-            for (let i = 1; i < 100; i++) window.clearInterval(i);
-        };
-        killIntervals();
+        window.clearInterval(window.shiftInterval);
+        window.clearInterval(window.pauseInterval);
+        window.clearInterval(window.callInterval);
 
-        // 3. Limpar LocalStorage da Sessão
+        // 3. Limpar LocalStorage (Sessão e Matrícula)
         const matriculaAtual = getMatricula();
         localStorage.removeItem(`claro_session_${matriculaAtual}`);
         localStorage.removeItem('claro_matricula');
@@ -100,10 +92,10 @@ async function executeSecureLogout() {
         // 4. Logout do Firebase
         await signOut(auth);
 
-        // 5. Delay pequeno para o usuário ver o "bonitinho" do loader
+        // 5. Delay visual para o loader
         await new Promise(resolve => setTimeout(resolve, 1500));
 
-        // 6. Reload final após estar TOTALMENTE deslogado
+        // 6. Reload final
         window.location.reload();
         
     } catch (e) {
@@ -123,8 +115,8 @@ function applyInterceptors() {
     const originalToggle = window.toggleShift;
     window.toggleShift = function() {
         const matricula = getMatricula();
-        const isShiftActive = document.getElementById('btn-shift')?.innerText.includes('Encerrar') || 
-                             document.getElementById('btn-shift')?.innerText.includes('Pendente');
+        const btn = document.getElementById('btn-shift');
+        const isShiftActive = btn?.innerText.includes('Encerrar') || btn?.innerText.includes('Pendente');
 
         if (!isShiftActive && (!auth.currentUser || !matricula)) {
             window._pendingShiftAction = true;
@@ -134,13 +126,9 @@ function applyInterceptors() {
         return originalToggle.apply(this, arguments);
     };
 
-    // Sobrescreve o encerrarJornada original com a versão segura
     const originalEncerrar = window.encerrarJornada;
     window.encerrarJornada = async function() {
-        // Primeiro executa a lógica de fechamento de dados do main.js
         if (originalEncerrar) originalEncerrar.apply(this, arguments);
-        
-        // Depois inicia o processo de logout total e reload
         await executeSecureLogout();
     };
 
@@ -156,12 +144,20 @@ function applyInterceptors() {
     });
 }
 
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
     const matricula = getMatricula();
     if (user && matricula) {
         const modal = document.getElementById('auth-container');
         if (modal) modal.style.display = 'none';
-        loadDataFromFirebase();
+        
+        // Se o LocalStorage estiver zerado ao entrar, força a recuperação imediata
+        if (!localStorage.getItem(getDataKey())) {
+            const remoteData = await window.fetchFromFirebase();
+            if (remoteData) {
+                localStorage.setItem(getDataKey(), JSON.stringify(remoteData));
+                if (window.updateStatsDisplay) window.updateStatsDisplay();
+            }
+        }
         syncToFirebase();
     }
 });
@@ -177,11 +173,12 @@ document.addEventListener('click', async (e) => {
                 await signInAnonymously(auth);
                 
                 if (window._pendingShiftAction) {
+                    // O toggleShift no main.js agora é async e lidará com o restoreSession
                     window.toggleShift();
                     window._pendingShiftAction = false;
                 }
             } catch (err) { 
-                alert("Falha na conexão."); 
+                console.error("Auth error:", err);
             }
         }
     }
