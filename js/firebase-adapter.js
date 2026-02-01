@@ -14,15 +14,18 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const dbFirestore = getFirestore(app);
 const auth = getAuth(app);
-let currentUser = null;
 
-// --- 1. SINCRONIZAÇÃO ---
+// --- UTILITÁRIOS DE CHAVE DINÂMICA ---
+const getMatricula = () => localStorage.getItem('claro_matricula');
+const getDataKey = () => `claro_data_${getMatricula()}`;
+const getSessionKey = () => `claro_session_${getMatricula()}`;
+
 async function syncToFirebase() {
-    const matricula = localStorage.getItem('claro_matricula');
+    const matricula = getMatricula();
     if (!auth.currentUser || !matricula) return;
 
-    const data = JSON.parse(localStorage.getItem('claro_data')) || { calls: [], shifts: [], pauses: [] };
-    const sessionLocal = JSON.parse(localStorage.getItem('claro_session')) || {};
+    const data = JSON.parse(localStorage.getItem(getDataKey())) || { calls: [], shifts: [], pauses: [] };
+    const sessionLocal = JSON.parse(localStorage.getItem(getSessionKey())) || {};
     const todayId = new Date().toISOString().split('T')[0];
 
     try {
@@ -32,58 +35,23 @@ async function syncToFirebase() {
             sessao_atual: sessionLocal,
             ultima_atualizacao: serverTimestamp()
         }, { merge: true });
-    } catch (e) { console.error("Erro Sync:", e); }
+    } catch (e) { 
+        console.error("❌ Erro Sync Firebase:", e); 
+    }
 }
 
-// --- 2. LOGIN E FECHAMENTO DO MODAL ---
-document.addEventListener('click', async (e) => {
-    if (e.target.id === 'btn-login-anon') {
-        const input = document.getElementById('login-matricula');
-        const matricula = input?.value.trim();
-        const modal = document.getElementById('auth-container');
-
-        if (!matricula || matricula.length < 3) {
-            alert("Insira uma matrícula válida.");
-            return;
-        }
-
-        try {
-            await signInAnonymously(auth);
-            localStorage.setItem('claro_matricula', matricula);
-            
-            // CORREÇÃO 1: Fecha o modal imediatamente após login com sucesso
-            if (modal) modal.style.display = 'none';
-
-            if (window._pendingShiftAction) {
-                // Pequeno delay para o Firebase processar o Auth antes de iniciar a jornada
-                setTimeout(() => {
-                    if (typeof window.toggleShift === 'function') {
-                        window.toggleShift();
-                    }
-                    window._pendingShiftAction = false;
-                }, 500);
-            }
-        } catch (err) {
-            console.error("Erro login:", err);
-            alert("Erro ao conectar ao servidor.");
-        }
-    }
-});
-
-// --- 3. INTERCEPTAÇÃO E CORREÇÃO DO TOGGLESHIFT ---
+// --- INTERCEPTADORES ---
 function applyInterceptors() {
-    // CORREÇÃO 2: Verificação robusta para não quebrar o onclick do HTML
-    if (!window.toggleShift) {
-        console.warn("Aguardando main.js carregar...");
-        setTimeout(applyInterceptors, 500);
+    if (!window.toggleShift || !window.encerrarJornada) {
+        setTimeout(applyInterceptors, 100);
         return;
     }
 
     const originalToggle = window.toggleShift;
     window.toggleShift = function() {
-        const matricula = localStorage.getItem('claro_matricula');
+        const matricula = getMatricula();
         const btnShift = document.getElementById('btn-shift');
-        const isShiftActive = btnShift?.innerText.includes('Encerrar');
+        const isShiftActive = btnShift?.innerText.includes('Encerrar') || btnShift?.innerText.includes('Pendente');
 
         if (!isShiftActive && (!auth.currentUser || !matricula)) {
             window._pendingShiftAction = true;
@@ -93,16 +61,35 @@ function applyInterceptors() {
         return originalToggle.apply(this, arguments);
     };
 
+    // O PONTO CRÍTICO: Matar os cronômetros e limpar a sessão antes do reload
     const originalEncerrar = window.encerrarJornada;
     window.encerrarJornada = async function() {
+        console.log("🚀 Iniciando encerramento seguro...");
+
+        // 1. Mata todos os Intervals globais IMEDIATAMENTE
+        const killIntervals = () => {
+            for (let i = 1; i < 9999; i++) window.clearInterval(i);
+        };
+        killIntervals();
+
+        // 2. Executa a limpeza lógica do main.js (salva o shift final no db local)
         if (originalEncerrar) originalEncerrar.apply(this, arguments);
-        await syncToFirebase();
+        
+        // 3. Backup final para o Firebase com o status "Off-line"
+        await syncToFirebase(); 
+        
+        // 4. Limpeza de rastro: remove matrícula e a sessão específica
+        const matriculaAtual = getMatricula();
+        localStorage.removeItem(`claro_session_${matriculaAtual}`);
         localStorage.removeItem('claro_matricula');
+        
+        // 5. Logout do Firebase
         await signOut(auth);
+        
+        // 6. Reload limpo
         window.location.reload(); 
     };
 
-    // Auto-sync em outras funções
     ['finalizeRecord', 'saveData', 'saveSession'].forEach(fn => {
         const original = window[fn];
         if (original) {
@@ -115,18 +102,34 @@ function applyInterceptors() {
     });
 }
 
-// Monitor de estado do Firebase
 onAuthStateChanged(auth, (user) => {
-    currentUser = user;
-    const matricula = localStorage.getItem('claro_matricula');
+    const matricula = getMatricula();
     if (user && matricula) {
         const modal = document.getElementById('auth-container');
         if (modal) modal.style.display = 'none';
+        syncToFirebase();
     }
 });
 
-// Inicialização
-window.addEventListener('load', () => {
-    // Aplica os interceptores assim que o DOM estiver pronto
-    applyInterceptors();
+document.addEventListener('click', async (e) => {
+    if (e.target.id === 'btn-login-anon') {
+        const input = document.getElementById('login-matricula');
+        const matricula = input?.value.trim();
+        
+        if (matricula && matricula.length >= 3) {
+            try {
+                localStorage.setItem('claro_matricula', matricula);
+                await signInAnonymously(auth);
+                
+                if (window._pendingShiftAction) {
+                    window.toggleShift();
+                    window._pendingShiftAction = false;
+                }
+            } catch (err) { 
+                alert("Falha na conexão."); 
+            }
+        }
+    }
 });
+
+window.addEventListener('load', applyInterceptors);

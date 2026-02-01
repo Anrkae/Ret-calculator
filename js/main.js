@@ -1,24 +1,25 @@
 import { animarEntradaFluxo } from './animations.js';
 
-// Variáveis de estado
-let callStartTime, callInterval;
-let shiftStartTime, shiftInterval;
-let pauseStartTime, pauseInterval;
+// Variáveis de estado expostas no window para o Kill Switch do Adapter
+window.shiftInterval = null;
+window.pauseInterval = null;
+window.callInterval = null;
+
+let callStartTime;
+let shiftStartTime;
+let pauseStartTime;
 let isCallActive = false;
 let isShiftActive = false;
 let isPauseActive = false;
 let isPausePending = false; 
 let pendingCallData = null;
 
-// Banco de dados e Estado Persistente
-let db = JSON.parse(localStorage.getItem('claro_data')) || { calls: [], shifts: [], pauses: [] };
-let session = JSON.parse(localStorage.getItem('claro_session')) || { 
-    shiftStart: null, 
-    pauseStart: null, 
-    isShiftActive: false, 
-    isPauseActive: false,
-    pendingCall: null 
-};
+// --- AJUSTE: CHAVE DINÂMICA POR MATRÍCULA ---
+const getMatricula = () => localStorage.getItem('claro_matricula') || 'default';
+const getDataKey = () => `claro_data_${getMatricula()}`;
+const getSessionKey = () => `claro_session_${getMatricula()}`;
+
+let db = { calls: [], shifts: [], pauses: [] };
 
 // --- CORE: PERSISTÊNCIA E SESSÃO ---
 
@@ -29,36 +30,42 @@ window.saveSession = function() {
         pauseStart: pauseStartTime, 
         pendingCall: pendingCallData 
     };
-    localStorage.setItem('claro_session', JSON.stringify(sessionData));
+    localStorage.setItem(getSessionKey(), JSON.stringify(sessionData));
 };
 
 window.saveData = function() { 
-    localStorage.setItem('claro_data', JSON.stringify(db)); 
+    localStorage.setItem(getDataKey(), JSON.stringify(db)); 
     updateHomeCards(); 
     window.updateStatsDisplay(); 
 };
 
 function restoreSession() {
-    if (session.isShiftActive) {
-        const isToday = new Date(session.shiftStart).toDateString() === new Date().toDateString();
-        if (isToday) {
-            vincularJornada(session.shiftStart);
-        } else {
-            isShiftActive = false;
-            window.saveSession();
+    db = JSON.parse(localStorage.getItem(getDataKey())) || { calls: [], shifts: [], pauses: [] };
+    const savedSession = JSON.parse(localStorage.getItem(getSessionKey()));
+    
+    if (savedSession) {
+        if (savedSession.isShiftActive) {
+            const isToday = new Date(savedSession.shiftStart).toDateString() === new Date().toDateString();
+            if (isToday) {
+                vincularJornada(savedSession.shiftStart);
+            } else {
+                isShiftActive = false;
+                window.saveSession();
+            }
         }
-    }
 
-    if (session.isPauseActive) {
-        isPauseActive = true;
-        pauseStartTime = session.pauseStart;
-        document.getElementById('active-break-display').classList.remove('none');
-        pauseInterval = setInterval(updatePauseTimer, 1000);
-    }
+        if (savedSession.isPauseActive) {
+            isPauseActive = true;
+            pauseStartTime = savedSession.pauseStart;
+            document.getElementById('active-break-display').classList.remove('none');
+            window.clearInterval(window.pauseInterval);
+            window.pauseInterval = setInterval(updatePauseTimer, 1000);
+        }
 
-    if (session.pendingCall) {
-        pendingCallData = session.pendingCall;
-        document.getElementById('modal-tabulacao').style.display = 'flex';
+        if (savedSession.pendingCall) {
+            pendingCallData = savedSession.pendingCall;
+            document.getElementById('modal-tabulacao').style.display = 'flex';
+        }
     }
 
     animarEntradaFluxo(isShiftActive, isPauseActive, false);
@@ -131,7 +138,9 @@ function vincularJornada(startTime) {
     document.getElementById('jackin-snippet').classList.replace('status-off', 'status-on');
     document.getElementById('pause-type').classList.remove('none');
     document.querySelector('.btn-pausa').classList.remove('none');
-    shiftInterval = setInterval(updateShiftTimer, 1000);
+    
+    window.clearInterval(window.shiftInterval);
+    window.shiftInterval = setInterval(updateShiftTimer, 1000);
 }
 
 window.toggleShift = function() {
@@ -139,6 +148,7 @@ window.toggleShift = function() {
     if (isShiftActive && !window.requireConfirm(btn, 'shift')) return;
 
     if (!isShiftActive) {
+        restoreSession(); 
         const today = new Date().toDateString();
         const jornadaExistente = db.shifts.find(s => new Date(s.start).toDateString() === today);
 
@@ -161,23 +171,39 @@ window.toggleShift = function() {
 window.encerrarJornada = function() {
     if (pendingCallData) window.finalizeRecord('improdutivo', 'fechamento_forçado');
     if (isCallActive) {
-        clearInterval(callInterval);
+        window.clearInterval(window.callInterval);
         pendingCallData = { timestamp: new Date().toISOString(), duration: Math.floor((Date.now() - callStartTime) / 1000) };
         window.finalizeRecord('retido', null);
     }
     if (isPauseActive) window.endPause(true);
     
-    clearInterval(shiftInterval);
-    db.shifts.push({ start: shiftStartTime, end: Date.now() });
-    isShiftActive = false;
+    // RESET ABSOLUTO DOS CRONÔMETROS
+    window.clearInterval(window.shiftInterval);
+    window.clearInterval(window.pauseInterval);
+    window.clearInterval(window.callInterval);
 
+    if (shiftStartTime) db.shifts.push({ start: shiftStartTime, end: Date.now() });
+    
+    // Zera variáveis de estado
+    isShiftActive = false;
+    shiftStartTime = null;
+    pauseStartTime = null;
+    callStartTime = null;
+
+    // UI Reset
     const btn = document.getElementById('btn-shift');
     btn.innerText = 'Iniciar Jornada';
     btn.classList.replace('btn-danger', 'btn-glass');
+    btn.classList.remove('confirming'); 
+    
     document.getElementById('shift-status').innerText = 'Off-line';
+    document.getElementById('session-timer').innerText = '00:00:00';
+    document.getElementById('break-timer').innerText = '00:00';
+    document.getElementById('call-display').innerText = '00:00';
     document.getElementById('jackin-snippet').classList.replace('status-on', 'status-off');
     document.getElementById('pause-type').classList.add('none');
     document.querySelector('.btn-pausa').classList.add('none');
+    
     animarEntradaFluxo(false, false, false);
     window.saveSession();
     window.saveData();
@@ -196,7 +222,8 @@ window.startPause = function() {
 window.executarInicioPausa = function() {
     isPauseActive = true; pauseStartTime = Date.now();
     document.getElementById('active-break-display').classList.remove('none');
-    pauseInterval = setInterval(updatePauseTimer, 1000);
+    window.clearInterval(window.pauseInterval);
+    window.pauseInterval = setInterval(updatePauseTimer, 1000);
     syncTelefoniaUI(true); animarEntradaFluxo(true, true, true);
     updatePauseBtnUI(); window.saveSession();
 };
@@ -204,9 +231,10 @@ window.executarInicioPausa = function() {
 window.endPause = function(force) {
     if (!isPauseActive) return;
     if (!force && !window.requireConfirm(event.currentTarget, 'return')) return;
-    clearInterval(pauseInterval);
+    window.clearInterval(window.pauseInterval);
     db.pauses.push({ type: document.getElementById('pause-type').value, start: pauseStartTime, end: Date.now() });
     isPauseActive = false;
+    pauseStartTime = null;
     document.getElementById('active-break-display').classList.add('none');
     syncTelefoniaUI(true); animarEntradaFluxo(true, false, true);
     window.saveSession(); window.saveData();
@@ -215,14 +243,15 @@ window.endPause = function(force) {
 window.startCall = function() {
     if (!isShiftActive || isPauseActive || isCallActive || pendingCallData) return;
     isCallActive = true; callStartTime = Date.now();
-    callInterval = setInterval(updateCallTimer, 1000);
+    window.clearInterval(window.callInterval);
+    window.callInterval = setInterval(updateCallTimer, 1000);
     syncTelefoniaUI(true); window.saveSession();
 };
 
 window.endCall = function(result) {
     if (!isCallActive) return;
     if (!window.requireConfirm(event.currentTarget, result)) return;
-    clearInterval(callInterval);
+    window.clearInterval(window.callInterval);
     pendingCallData = { timestamp: new Date().toISOString(), duration: Math.floor((Date.now() - callStartTime) / 1000) };
     isCallActive = false;
     document.getElementById('modal-tabulacao').style.display = 'flex';
@@ -248,9 +277,18 @@ function updatePauseBtnUI() {
     isPausePending ? btnPausa.classList.add('btn-warning') : btnPausa.classList.remove('btn-warning');
 }
 
-function updateCallTimer() { document.getElementById('call-display').innerText = formatTime(Math.floor((Date.now()-callStartTime)/1000)); }
-function updateShiftTimer() { document.getElementById('session-timer').innerText = formatTimeFull(Math.floor((Date.now()-shiftStartTime)/1000)); }
-function updatePauseTimer() { document.getElementById('break-timer').innerText = formatTime(Math.floor((Date.now()-pauseStartTime)/1000)); }
+function updateCallTimer() { 
+    if(!callStartTime) return;
+    document.getElementById('call-display').innerText = formatTime(Math.floor((Date.now()-callStartTime)/1000)); 
+}
+function updateShiftTimer() { 
+    if(!shiftStartTime) return;
+    document.getElementById('session-timer').innerText = formatTimeFull(Math.floor((Date.now()-shiftStartTime)/1000)); 
+}
+function updatePauseTimer() { 
+    if(!pauseStartTime) return;
+    document.getElementById('break-timer').innerText = formatTime(Math.floor((Date.now()-pauseStartTime)/1000)); 
+}
 
 function formatTime(s) { return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`; }
 function formatTimeFull(s) {
@@ -280,6 +318,7 @@ window.updateStatsDisplay = function() {
     });
 
     const daysWithActivity = [...new Set(db.shifts.map(s => new Date(s.start).toDateString()))].length || 1;
+
     const totalTmaSec = filteredCalls.reduce((a,c) => a + c.duration, 0);
     document.getElementById('stat-tma').innerText = filteredCalls.length ? Math.round(totalTmaSec / filteredCalls.length) : 0;
 
@@ -325,4 +364,8 @@ window.toast = function(msg) {
     setTimeout(() => { gsap.to(t, { opacity: 0, y: -20, onComplete: () => t.remove() }); }, 3000);
 };
 
-window.addEventListener('load', restoreSession);
+window.addEventListener('load', () => {
+    if (localStorage.getItem('claro_matricula')) {
+        restoreSession();
+    }
+});
