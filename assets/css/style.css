@@ -93,9 +93,10 @@ body {
 
 .card h2 { font-size: 3em; font-weight: 200; }
 
-.card:hover {
-    transform: scale(1.02);
+.card:hover, .stat-card:hover {
+    transform: scale(0.98);
 }
+.stat-card { transition: all 0.3s ease; }
 
 #jackin-snippet {
     width: 80vw !important;
@@ -387,5 +388,9 @@ select.glass { border: none; padding: 10px; border-radius: 10px; appearance: non
         border-color: white;
         padding: 12px;
         background-color: var(--glass-bg);
+    }
+    .stats-grid {
+        display: flex;
+        flex-direction: column;
     }
 }
