@@ -24,7 +24,8 @@ async function syncToFirebase() {
     const matricula = getMatricula();
     if (!auth.currentUser || !matricula) return;
 
-    const data = JSON.parse(localStorage.getItem(getDataKey())) || { calls: [], shifts: [], pauses: [] };
+    // Agora inclui jackinTime no histórico e jackinStart na sessão atual
+    const data = JSON.parse(localStorage.getItem(getDataKey())) || { calls: [], shifts: [], pauses: [], jackinTime: 0 };
     const sessionLocal = JSON.parse(localStorage.getItem(getSessionKey())) || {};
     const todayId = new Date().toISOString().split('T')[0];
 
@@ -61,24 +62,27 @@ function applyInterceptors() {
         return originalToggle.apply(this, arguments);
     };
 
-    // O PONTO CRÍTICO: Matar os cronômetros e limpar a sessão antes do reload
     const originalEncerrar = window.encerrarJornada;
     window.encerrarJornada = async function() {
-        console.log("🚀 Iniciando encerramento seguro...");
+        console.log("🚀 Iniciando encerramento seguro e zerando indicadores...");
 
-        // 1. Mata todos os Intervals globais IMEDIATAMENTE
+        // 1. Mata todos os cronômetros globais (Kill Switch)
         const killIntervals = () => {
-            for (let i = 1; i < 9999; i++) window.clearInterval(i);
+            window.clearInterval(window.shiftInterval);
+            window.clearInterval(window.pauseInterval);
+            window.clearInterval(window.callInterval);
+            // Backup de segurança para qualquer outro timer perdido
+            for (let i = 1; i < 100; i++) window.clearInterval(i);
         };
         killIntervals();
 
-        // 2. Executa a limpeza lógica do main.js (salva o shift final no db local)
+        // 2. Executa a limpeza lógica do main.js (salva acumulados de Jackin e Shifts)
         if (originalEncerrar) originalEncerrar.apply(this, arguments);
         
-        // 3. Backup final para o Firebase com o status "Off-line"
+        // 3. Backup final para o Firebase com os dados consolidados
         await syncToFirebase(); 
         
-        // 4. Limpeza de rastro: remove matrícula e a sessão específica
+        // 4. Limpeza de rastro de sessão e matrícula
         const matriculaAtual = getMatricula();
         localStorage.removeItem(`claro_session_${matriculaAtual}`);
         localStorage.removeItem('claro_matricula');
@@ -86,10 +90,11 @@ function applyInterceptors() {
         // 5. Logout do Firebase
         await signOut(auth);
         
-        // 6. Reload limpo
+        // 6. Reload forçado para limpar o estado da memória e timers do navegador
         window.location.reload(); 
     };
 
+    // Auto-sync ao salvar qualquer dado importante
     ['finalizeRecord', 'saveData', 'saveSession'].forEach(fn => {
         const original = window[fn];
         if (original) {

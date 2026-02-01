@@ -8,6 +8,8 @@ window.callInterval = null;
 let callStartTime;
 let shiftStartTime;
 let pauseStartTime;
+let jackinStartTime; // Início do bloco de tempo produtivo atual
+
 let isCallActive = false;
 let isShiftActive = false;
 let isPauseActive = false;
@@ -19,7 +21,8 @@ const getMatricula = () => localStorage.getItem('claro_matricula') || 'default';
 const getDataKey = () => `claro_data_${getMatricula()}`;
 const getSessionKey = () => `claro_session_${getMatricula()}`;
 
-let db = { calls: [], shifts: [], pauses: [] };
+// db agora inclui jackinTime para acumular o tempo produtivo
+let db = { calls: [], shifts: [], pauses: [], jackinTime: 0 };
 
 // --- CORE: PERSISTÊNCIA E SESSÃO ---
 
@@ -28,6 +31,7 @@ window.saveSession = function() {
         isShiftActive, isPauseActive, 
         shiftStart: shiftStartTime, 
         pauseStart: pauseStartTime, 
+        jackinStart: jackinStartTime,
         pendingCall: pendingCallData 
     };
     localStorage.setItem(getSessionKey(), JSON.stringify(sessionData));
@@ -40,16 +44,17 @@ window.saveData = function() {
 };
 
 function restoreSession() {
-    db = JSON.parse(localStorage.getItem(getDataKey())) || { calls: [], shifts: [], pauses: [] };
+    db = JSON.parse(localStorage.getItem(getDataKey())) || { calls: [], shifts: [], pauses: [], jackinTime: 0 };
     const savedSession = JSON.parse(localStorage.getItem(getSessionKey()));
     
     if (savedSession) {
         if (savedSession.isShiftActive) {
             const isToday = new Date(savedSession.shiftStart).toDateString() === new Date().toDateString();
             if (isToday) {
-                vincularJornada(savedSession.shiftStart);
+                vincularJornada(savedSession.shiftStart, savedSession.jackinStart);
             } else {
                 isShiftActive = false;
+                db.jackinTime = 0; // Reseta acumulado se for novo dia
                 window.saveSession();
             }
         }
@@ -74,7 +79,7 @@ function restoreSession() {
     window.updateSnippetIcon();
 }
 
-// --- INTERFACE (Animações e 360) ---
+// --- INTERFACE ---
 
 function syncTelefoniaUI(animate = true) {
     const telContainer = document.querySelector('.telefone');
@@ -126,15 +131,20 @@ window.updateSnippetIcon = function() {
         : `<img src="svg/xmark.svg" class="icon-svg" style="width:16px">`;
 };
 
-// --- JORNADA ---
+// --- JORNADA E JACKIN ---
 
-function vincularJornada(startTime) {
+function vincularJornada(startTime, savedJackinStart) {
     isShiftActive = true;
     shiftStartTime = startTime;
+    // Se não houver pausa ativa, o Jackin começa/retoma agora
+    if (!isPauseActive) jackinStartTime = savedJackinStart || Date.now();
+    
     const btn = document.getElementById('btn-shift');
     btn.innerText = 'Encerrar Jornada';
     btn.classList.replace('btn-glass', 'btn-danger');
+    
     document.getElementById('shift-status').innerText = 'Em Jornada';
+    document.getElementById('jackin-container-header').classList.remove('none');
     document.getElementById('jackin-snippet').classList.replace('status-off', 'status-on');
     document.getElementById('pause-type').classList.remove('none');
     document.querySelector('.btn-pausa').classList.remove('none');
@@ -157,6 +167,7 @@ window.toggleShift = function() {
             vincularJornada(jornadaExistente.start);
             db.shifts = db.shifts.filter(s => s !== jornadaExistente);
         } else {
+            db.jackinTime = 0; // Novo dia, nova contagem
             vincularJornada(Date.now());
         }
         animarEntradaFluxo(true, false, false);
@@ -175,31 +186,32 @@ window.encerrarJornada = function() {
         pendingCallData = { timestamp: new Date().toISOString(), duration: Math.floor((Date.now() - callStartTime) / 1000) };
         window.finalizeRecord('retido', null);
     }
+    
+    // Antes de encerrar, salva o Jackin acumulado deste bloco
+    if (isShiftActive && !isPauseActive && jackinStartTime) {
+        db.jackinTime += (Date.now() - jackinStartTime);
+    }
+    
     if (isPauseActive) window.endPause(true);
     
-    // RESET ABSOLUTO DOS CRONÔMETROS
     window.clearInterval(window.shiftInterval);
     window.clearInterval(window.pauseInterval);
     window.clearInterval(window.callInterval);
 
     if (shiftStartTime) db.shifts.push({ start: shiftStartTime, end: Date.now() });
     
-    // Zera variáveis de estado
     isShiftActive = false;
     shiftStartTime = null;
-    pauseStartTime = null;
-    callStartTime = null;
+    jackinStartTime = null;
 
-    // UI Reset
     const btn = document.getElementById('btn-shift');
     btn.innerText = 'Iniciar Jornada';
     btn.classList.replace('btn-danger', 'btn-glass');
-    btn.classList.remove('confirming'); 
     
     document.getElementById('shift-status').innerText = 'Off-line';
     document.getElementById('session-timer').innerText = '00:00:00';
-    document.getElementById('break-timer').innerText = '00:00';
-    document.getElementById('call-display').innerText = '00:00';
+    document.getElementById('jackin-timer-header').innerText = '00:00:00';
+    document.getElementById('jackin-container-header').classList.add('none');
     document.getElementById('jackin-snippet').classList.replace('status-on', 'status-off');
     document.getElementById('pause-type').classList.add('none');
     document.querySelector('.btn-pausa').classList.add('none');
@@ -220,6 +232,12 @@ window.startPause = function() {
 };
 
 window.executarInicioPausa = function() {
+    // Ao iniciar pausa, o bloco Jackin termina e acumula no db
+    if (jackinStartTime) {
+        db.jackinTime += (Date.now() - jackinStartTime);
+        jackinStartTime = null;
+    }
+    
     isPauseActive = true; pauseStartTime = Date.now();
     document.getElementById('active-break-display').classList.remove('none');
     window.clearInterval(window.pauseInterval);
@@ -231,10 +249,15 @@ window.executarInicioPausa = function() {
 window.endPause = function(force) {
     if (!isPauseActive) return;
     if (!force && !window.requireConfirm(event.currentTarget, 'return')) return;
+    
     window.clearInterval(window.pauseInterval);
     db.pauses.push({ type: document.getElementById('pause-type').value, start: pauseStartTime, end: Date.now() });
+    
     isPauseActive = false;
     pauseStartTime = null;
+    // Ao retornar da pausa, um novo bloco Jackin começa
+    jackinStartTime = Date.now();
+    
     document.getElementById('active-break-display').classList.add('none');
     syncTelefoniaUI(true); animarEntradaFluxo(true, false, true);
     window.saveSession(); window.saveData();
@@ -281,10 +304,21 @@ function updateCallTimer() {
     if(!callStartTime) return;
     document.getElementById('call-display').innerText = formatTime(Math.floor((Date.now()-callStartTime)/1000)); 
 }
+
 function updateShiftTimer() { 
     if(!shiftStartTime) return;
-    document.getElementById('session-timer').innerText = formatTimeFull(Math.floor((Date.now()-shiftStartTime)/1000)); 
+    const now = Date.now();
+    // Timer de Sessão (Tempo Logado corrido)
+    document.getElementById('session-timer').innerText = formatTimeFull(Math.floor((now-shiftStartTime)/1000)); 
+    
+    // Timer Jackin (Só incrementa se não estiver em pausa)
+    if (!isPauseActive && jackinStartTime) {
+        const currentJackinSession = now - jackinStartTime;
+        const totalJackinMs = (db.jackinTime || 0) + currentJackinSession;
+        document.getElementById('jackin-timer-header').innerText = formatTimeFull(Math.floor(totalJackinMs/1000));
+    }
 }
+
 function updatePauseTimer() { 
     if(!pauseStartTime) return;
     document.getElementById('break-timer').innerText = formatTime(Math.floor((Date.now()-pauseStartTime)/1000)); 
@@ -319,20 +353,27 @@ window.updateStatsDisplay = function() {
 
     const daysWithActivity = [...new Set(db.shifts.map(s => new Date(s.start).toDateString()))].length || 1;
 
+    // TMA e Desconexão
     const totalTmaSec = filteredCalls.reduce((a,c) => a + c.duration, 0);
     document.getElementById('stat-tma').innerText = filteredCalls.length ? Math.round(totalTmaSec / filteredCalls.length) : 0;
-
     const validDesconexao = filteredCalls.filter(c => c.result === 'retido' || c.result === 'cancelado');
     const totalCancels = filteredCalls.filter(c => c.result === 'cancelado').length;
     document.getElementById('stat-disc').innerText = validDesconexao.length ? Math.round((totalCancels / validDesconexao.length) * 100) + '%' : '0%';
 
+    // Tempo Logado
     let rawLoggedMs = db.shifts.reduce((a,s) => a + (s.end - s.start), 0) + (isShiftActive ? (now - shiftStartTime) : 0);
     let finalLoggedMs = isToday ? rawLoggedMs : (rawLoggedMs / daysWithActivity);
     document.getElementById('stat-logged').innerText = formatHoursMinutesFromMs(finalLoggedMs);
 
+    // Pausas
     let rawPauseMs = db.pauses.reduce((a,p) => a + (p.end - p.start), 0) + (isPauseActive ? (now - pauseStartTime) : 0);
     let finalPauseMs = isToday ? rawPauseMs : (rawPauseMs / daysWithActivity);
     document.getElementById('stat-pauses').innerText = formatHoursMinutesFromMs(finalPauseMs);
+
+    // JACKIN (Tempo de Produção)
+    let currentJackinMs = (db.jackinTime || 0) + ((!isPauseActive && jackinStartTime) ? (now - jackinStartTime) : 0);
+    let finalJackinMs = isToday ? currentJackinMs : (currentJackinMs / daysWithActivity);
+    document.getElementById('stat-jackin').innerText = formatHoursMinutesFromMs(finalJackinMs);
 };
 
 window.showPage = function(pageId) {
