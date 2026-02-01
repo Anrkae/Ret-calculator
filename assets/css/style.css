@@ -78,6 +78,7 @@ body {
 
 .carrossel, .card-principal {
     display: flex;
+    flex-direction: column;
     justify-content: space-evenly;
     width: 100%;
 }
@@ -249,7 +250,7 @@ flex: 0 0 40%;
     gap: 15px;
 }
 
-.stat-card { padding: 20px; text-align: center; }
+.stat-card { padding: 20px; text-align: center; margin-bottom: 14px; }
 .stat-card h4 { font-size: 1.4em; }
 .stat-card p { font-size: 0.8em; opacity: 0.6; }
 
