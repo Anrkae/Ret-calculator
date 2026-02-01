@@ -22,7 +22,7 @@ let session = JSON.parse(localStorage.getItem('claro_session')) || {
 
 // --- CORE: PERSISTÊNCIA E SESSÃO ---
 
-function saveSession() {
+window.saveSession = function() {
     const sessionData = { 
         isShiftActive, isPauseActive, 
         shiftStart: shiftStartTime, 
@@ -30,7 +30,13 @@ function saveSession() {
         pendingCall: pendingCallData 
     };
     localStorage.setItem('claro_session', JSON.stringify(sessionData));
-}
+};
+
+window.saveData = function() { 
+    localStorage.setItem('claro_data', JSON.stringify(db)); 
+    updateHomeCards(); 
+    window.updateStatsDisplay(); 
+};
 
 function restoreSession() {
     if (session.isShiftActive) {
@@ -39,7 +45,7 @@ function restoreSession() {
             vincularJornada(session.shiftStart);
         } else {
             isShiftActive = false;
-            saveSession();
+            window.saveSession();
         }
     }
 
@@ -58,7 +64,7 @@ function restoreSession() {
     animarEntradaFluxo(isShiftActive, isPauseActive, false);
     syncTelefoniaUI(false); 
     updateHomeCards();
-    updateSnippetIcon();
+    window.updateSnippetIcon();
 }
 
 // --- INTERFACE (Animações e 360) ---
@@ -105,8 +111,9 @@ window.toggleSnippet = function() {
 
 window.updateSnippetIcon = function() {
     const btn = document.getElementById('toggle-snippet');
-    const isMin = document.getElementById('jackin-snippet').classList.contains('minimized');
-    if (!btn) return;
+    const snippet = document.getElementById('jackin-snippet');
+    if (!btn || !snippet) return;
+    const isMin = snippet.classList.contains('minimized');
     btn.innerHTML = isMin 
         ? `<img src="svg/timer.svg" class="icon-svg" style="width:20px">`
         : `<img src="svg/xmark.svg" class="icon-svg" style="width:16px">`;
@@ -144,19 +151,19 @@ window.toggleShift = function() {
         }
         animarEntradaFluxo(true, false, false);
     } else {
-        encerrarJornada();
+        window.encerrarJornada();
     }
     syncTelefoniaUI(true);
-    saveSession();
-    saveData();
+    window.saveSession();
+    window.saveData();
 };
 
-function encerrarJornada() {
-    if (pendingCallData) finalizeRecord('improdutivo', 'fechamento_forçado');
+window.encerrarJornada = function() {
+    if (pendingCallData) window.finalizeRecord('improdutivo', 'fechamento_forçado');
     if (isCallActive) {
         clearInterval(callInterval);
         pendingCallData = { timestamp: new Date().toISOString(), duration: Math.floor((Date.now() - callStartTime) / 1000) };
-        finalizeRecord('retido', null);
+        window.finalizeRecord('retido', null);
     }
     if (isPauseActive) window.endPause(true);
     
@@ -172,7 +179,9 @@ function encerrarJornada() {
     document.getElementById('pause-type').classList.add('none');
     document.querySelector('.btn-pausa').classList.add('none');
     animarEntradaFluxo(false, false, false);
-}
+    window.saveSession();
+    window.saveData();
+};
 
 // --- PAUSA E LIGAÇÕES ---
 
@@ -181,16 +190,16 @@ window.startPause = function() {
     if (isPausePending) { isPausePending = false; window.toast('Pausa cancelada'); updatePauseBtnUI(); return; }
     if (isCallActive) { isPausePending = true; window.toast('Pausa agendada!'); updatePauseBtnUI(); return; }
     if (!window.requireConfirm(event.currentTarget, 'pause')) return;
-    executarInicioPausa();
+    window.executarInicioPausa();
 };
 
-function executarInicioPausa() {
+window.executarInicioPausa = function() {
     isPauseActive = true; pauseStartTime = Date.now();
     document.getElementById('active-break-display').classList.remove('none');
     pauseInterval = setInterval(updatePauseTimer, 1000);
     syncTelefoniaUI(true); animarEntradaFluxo(true, true, true);
-    updatePauseBtnUI(); saveSession();
-}
+    updatePauseBtnUI(); window.saveSession();
+};
 
 window.endPause = function(force) {
     if (!isPauseActive) return;
@@ -200,14 +209,14 @@ window.endPause = function(force) {
     isPauseActive = false;
     document.getElementById('active-break-display').classList.add('none');
     syncTelefoniaUI(true); animarEntradaFluxo(true, false, true);
-    saveSession(); saveData();
+    window.saveSession(); window.saveData();
 };
 
 window.startCall = function() {
     if (!isShiftActive || isPauseActive || isCallActive || pendingCallData) return;
     isCallActive = true; callStartTime = Date.now();
     callInterval = setInterval(updateCallTimer, 1000);
-    syncTelefoniaUI(true); saveSession();
+    syncTelefoniaUI(true); window.saveSession();
 };
 
 window.endCall = function(result) {
@@ -217,18 +226,18 @@ window.endCall = function(result) {
     pendingCallData = { timestamp: new Date().toISOString(), duration: Math.floor((Date.now() - callStartTime) / 1000) };
     isCallActive = false;
     document.getElementById('modal-tabulacao').style.display = 'flex';
-    syncTelefoniaUI(true); saveSession();
+    syncTelefoniaUI(true); window.saveSession();
 };
 
-function finalizeRecord(result, reason) {
+window.finalizeRecord = function(result, reason) {
     if (!pendingCallData) return;
     pendingCallData.result = result; pendingCallData.reason = reason;
     db.calls.push(pendingCallData); pendingCallData = null;
     document.getElementById('modal-tabulacao').style.display = 'none';
     document.getElementById('call-display').innerText = '00:00';
-    saveSession(); saveData();
-    if (isPausePending) { isPausePending = false; updatePauseBtnUI(); executarInicioPausa(); }
-}
+    window.saveSession(); window.saveData();
+    if (isPausePending) { isPausePending = false; updatePauseBtnUI(); window.executarInicioPausa(); }
+};
 
 // --- AUXILIARES ---
 
@@ -253,8 +262,6 @@ function formatHoursMinutesFromMs(ms) {
     return `${Math.floor(totalMin/60)}h ${totalMin%60}m`;
 }
 
-function saveData() { localStorage.setItem('claro_data', JSON.stringify(db)); updateHomeCards(); updateStatsDisplay(); }
-
 function updateHomeCards() {
     const calls = db.calls.filter(c => new Date(c.timestamp).toDateString() === (new Date()).toDateString());
     document.getElementById('desc-display').innerText = calls.filter(c => c.result === 'cancelado').length;
@@ -262,45 +269,32 @@ function updateHomeCards() {
     document.getElementById('tma-display').innerText = calls.length ? Math.round(total / calls.length) : 0;
 }
 
-// --- ABA ESTATÍSTICAS (LÓGICA FINAL) ---
-
 window.updateStatsDisplay = function() {
     const filter = document.getElementById('stats-filter').value;
     const now = Date.now();
     const isToday = filter === 'today';
 
-    // 1. Filtragem por período
     let filteredCalls = db.calls.filter(c => {
         const d = new Date(c.timestamp);
         return isToday ? d.toDateString() === new Date().toDateString() : true;
     });
 
-    // 2. Cálculo de dias únicos no intervalo (para as médias)
     const daysWithActivity = [...new Set(db.shifts.map(s => new Date(s.start).toDateString()))].length || 1;
-
-    // INDICADOR: TMA (Sempre Média em Segundos)
     const totalTmaSec = filteredCalls.reduce((a,c) => a + c.duration, 0);
-    document.getElementById('stat-tma').innerText = filteredCalls.length 
-        ? Math.round(totalTmaSec / filteredCalls.length) : 0;
+    document.getElementById('stat-tma').innerText = filteredCalls.length ? Math.round(totalTmaSec / filteredCalls.length) : 0;
 
-    // INDICADOR: DESCONEXÃO (Sempre Média %)
     const validDesconexao = filteredCalls.filter(c => c.result === 'retido' || c.result === 'cancelado');
     const totalCancels = filteredCalls.filter(c => c.result === 'cancelado').length;
-    document.getElementById('stat-disc').innerText = validDesconexao.length 
-        ? Math.round((totalCancels / validDesconexao.length) * 100) + '%' : '0%';
+    document.getElementById('stat-disc').innerText = validDesconexao.length ? Math.round((totalCancels / validDesconexao.length) * 100) + '%' : '0%';
 
-    // INDICADOR: TEMPO LOGADO (Hoje = Soma | Consolidado = Média)
     let rawLoggedMs = db.shifts.reduce((a,s) => a + (s.end - s.start), 0) + (isShiftActive ? (now - shiftStartTime) : 0);
     let finalLoggedMs = isToday ? rawLoggedMs : (rawLoggedMs / daysWithActivity);
     document.getElementById('stat-logged').innerText = formatHoursMinutesFromMs(finalLoggedMs);
 
-    // INDICADOR: PAUSAS (Hoje = Soma | Consolidado = Média | Formato 0h 0m)
     let rawPauseMs = db.pauses.reduce((a,p) => a + (p.end - p.start), 0) + (isPauseActive ? (now - pauseStartTime) : 0);
     let finalPauseMs = isToday ? rawPauseMs : (rawPauseMs / daysWithActivity);
     document.getElementById('stat-pauses').innerText = formatHoursMinutesFromMs(finalPauseMs);
 };
-
-// --- NAVEGAÇÃO E MODAIS ---
 
 window.showPage = function(pageId) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -311,10 +305,10 @@ window.showPage = function(pageId) {
 };
 
 window.handleTabulacao = function(tipo) {
-    tipo === 'cancelado' ? (document.getElementById('step-resultado').classList.add('none'), document.getElementById('step-motivos').classList.remove('none')) : finalizeRecord(tipo, null);
+    tipo === 'cancelado' ? (document.getElementById('step-resultado').classList.add('none'), document.getElementById('step-motivos').classList.remove('none')) : window.finalizeRecord(tipo, null);
 };
 
-window.confirmFinalReason = function(reason) { finalizeRecord(reason === '021' ? 'improdutivo' : 'cancelado', reason); };
+window.confirmFinalReason = function(reason) { window.finalizeRecord(reason === '021' ? 'improdutivo' : 'cancelado', reason); };
 
 window.requireConfirm = function(btn, key) {
     if (btn.dataset.confirm === key) { btn.classList.remove('confirming'); delete btn.dataset.confirm; return true; }
