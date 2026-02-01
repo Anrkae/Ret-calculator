@@ -9,6 +9,12 @@
 </head>
 <body>
 
+    <div id="logout-loader" class="modal-overlay" style="display: none; z-index: 20000; background: rgba(0,0,0,0.9); flex-direction: column; gap: 20px;">
+        <div class="spinner"></div>
+        <h2 style="color: white; font-family: sans-serif; letter-spacing: 1px;">Deslogando...</h2>
+        <p style="color: #888; font-family: sans-serif;">Salvando seus dados com segurança</p>
+    </div>
+
     <header id="jackin-snippet" class="glass status-off" data-animate="1">
         <div class="snippet-content">
             <div class="status-info">
@@ -33,10 +39,10 @@
         <div class="controles none" data-animate="3">
             <div class="control-group telefone">
                 <div class="div-telefone">
-                    <button class="btn-atender" onclick="startCall()">
+                    <button class="btn-atender" id="btn-atender-main" onclick="startCall()">
                         <img src="svg/atender.svg">
                     </button>
-                    <button class="btn-desligar none" onclick="endCall('')">
+                    <button class="btn-desligar none" id="btn-desligar-main" onclick="endCall('')">
                         <img src="svg/desligar.svg">
                     </button>
                     <img src="svg/pause.svg" id="minimizar-tel" class="btn-minimizar none">
@@ -74,7 +80,7 @@
                         <option value="Lanche">Lanche</option>
                         <option value="Particular">Particular</option>
                     </select>
-                    <button class="btn btn-pausa none" onclick="startPause()" data-animate="5">Pausa</button>
+                    <button class="btn btn-pausa none" id="btn-pausa-trigger" onclick="startPause()" data-animate="5">Pausa</button>
                 </div>
                 
                 <button class="btn btn-retornar none" onclick="endPause()" data-animate="6">Retornar</button>
