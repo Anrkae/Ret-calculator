@@ -52,14 +52,14 @@
 
         <section id="page-home" class="page active">
             <div class="home-content none" data-animate="7">
-                <div class="card-principal">
-                    <div class="timer-container glass card">
-                        <h2 id="call-display">00:00</h2>
-                        <p>Tempo de Ligação</p>
-                    </div>
-                </div>
-
                 <div class="carrossel">
+                    <div class="card-principal">
+                        <div class="timer-container glass card">
+                            <h2 id="call-display">00:00</h2>
+                            <p>Tempo de Ligação</p>
+                        </div>
+                    </div>
+
                     <div class="desc-container glass card">
                         <h2 id="desc-display">0</h2>
                         <p>Desconexões</p>
@@ -98,7 +98,19 @@
                 </select>
             </div>
 
-            <div class="stats-grid">
+            <div class=".telefone {
+position: fixed;
+bottom: 100px;
+left: 0%;
+z-index: 100;
+border-radius: 0 var(--radius) var(--radius) 0;
+border-right: var(--border);
+backdrop-filter: blur(5px);
+-webkit-backdrop-filter: blur(5px);
+border-color: white;
+padding: 12px;
+background-color: var(--glass-bg);
+}d">
                 <div class="stat-card glass bord highlight" style="border-color: #e11e1e;">
                     <h4 id="stat-jackin">0h 0m</h4>
                     <p>Jackin</p>

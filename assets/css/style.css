@@ -50,8 +50,20 @@ body {
 
 .controles {
     display: flex;
-    justify-content: space-evenly;
     width: 100%;
+}
+.telefone {
+    position: fixed;
+    bottom: 100px;
+    left: 0%;
+    z-index: 100;
+    border-radius: 0 var(--radius) var(--radius) 0;
+    border-right: var(--border);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    border-color: white;
+    padding: 12px;
+    background-color: var(--glass-bg);
 }
 .dv {
     border-radius: var(--radius);
