@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Claro Retenção - Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
 
@@ -31,7 +31,7 @@
             </div>
         </div>
         <button id="toggle-snippet" onclick="toggleSnippet()">
-            <img src="svg/xmark.svg" alt="Fechar" class="icon-x">
+            <img src="assets/svg/xmark.svg" alt="Fechar" class="icon-x">
         </button>
     </header>
 
@@ -40,12 +40,12 @@
             <div class="control-group telefone">
                 <div class="div-telefone">
                     <button class="btn-atender" id="btn-atender-main" onclick="startCall()">
-                        <img src="svg/atender.svg">
+                        <img src="assets/svg/atender.svg">
                     </button>
                     <button class="btn-desligar none" id="btn-desligar-main" onclick="endCall('')">
-                        <img src="svg/desligar.svg">
+                        <img src="assets/svg/desligar.svg">
                     </button>
-                    <img src="svg/pause.svg" id="minimizar-tel" class="btn-minimizar none">
+                    <img src="assets/svg/pause.svg" id="minimizar-tel" class="btn-minimizar none">
                 </div>
             </div>
         </div>
@@ -176,8 +176,8 @@
     </nav>
 
     <script src="https://unpkg.com/gsap@3/dist/gsap.min.js"></script>
-    <script type="module" src="js/main.js"></script>
-    <script type="module" src="js/firebase-adapter.js"></script>
+    <script type="module" src="assets/js/main.js"></script>
+    <script type="module" src="assets/js/firebase-adapter.js"></script>
 
 </body>
 </html>

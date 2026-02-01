@@ -160,8 +160,8 @@ window.updateSnippetIcon = function() {
     if (!btn || !snippet) return;
     const isMin = snippet.classList.contains('minimized');
     btn.innerHTML = isMin 
-        ? `<img src="svg/timer.svg" class="icon-svg" style="width:20px">`
-        : `<img src="svg/xmark.svg" class="icon-svg" style="width:16px">`;
+        ? `<img src="assets/svg/timer.svg" class="icon-svg" style="width:20px">`
+        : `<img src="assets/svg/xmark.svg" class="icon-svg" style="width:16px">`;
 };
 
 // --- JORNADA E JACKIN ---
