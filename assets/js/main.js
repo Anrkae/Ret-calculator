@@ -109,7 +109,6 @@ async function restoreSession() {
     updateHomeCards();
     updatePauseBtnUI();
     updateLogoutBtnUI();
-    window.updateSnippetIcon();
 }
 
 // --- INTERFACE ---
@@ -143,26 +142,22 @@ function syncTelefoniaUI(animate = true) {
 
 window.toggleSnippet = function() {
     const snippet = document.getElementById('jackin-snippet');
-    gsap.to(snippet, {
-        rotation: "+=360", duration: 0.6, ease: "power2.inOut",
-        onStart: () => {
-            setTimeout(() => {
-                snippet.classList.toggle('minimized');
-                window.updateSnippetIcon();
-            }, 300);
-        }
-    });
-};
-
-window.updateSnippetIcon = function() {
     const btn = document.getElementById('toggle-snippet');
-    const snippet = document.getElementById('jackin-snippet');
-    if (!btn || !snippet) return;
+    
+    if (!snippet || !btn) return;
+
+    // 1. Alterna a classe 'minimized' instantaneamente
+    snippet.classList.toggle('minimized');
+
+    // 2. Verifica o novo estado para atualizar o ícone
     const isMin = snippet.classList.contains('minimized');
+
+    // 3. Atualiza o HTML do botão
     btn.innerHTML = isMin 
         ? `<img src="assets/svg/timer.svg" class="icon-svg" style="width:20px">`
         : `<img src="assets/svg/xmark.svg" class="icon-svg" style="width:16px">`;
 };
+
 
 // --- JORNADA E JACKIN ---
 

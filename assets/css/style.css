@@ -100,6 +100,7 @@ body {
 #jackin-snippet {
     width: 80vw !important;
 }
+.jackin-info { padding: 0 10px; }
 
 .status-on {
     border-right: 3px solid #00ff6a;
@@ -113,7 +114,7 @@ header {
     top: 10px;
     left: 0%;
     z-index: 100;
-    padding: 10px 20px;
+    padding: 10px;
     border-radius: 0 var(--radius) var(--radius) 0 !important;
     display: flex;
     justify-content: space-between;
@@ -148,7 +149,7 @@ header.minimized {
 }
 
 header.minimized #toggle-snippet {
-    translate: 35%;
+    translate: 5%;
 }
 
 .status-info { display: flex; gap: 15px; font-weight: 600; font-size: 0.9em; }
