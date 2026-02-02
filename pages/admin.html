@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>ADM - Dashboard Geral</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+
+<header class="header">
+    <h1>📊 Painel Administrativo</h1>
+    <span id="status">Conectando ao Firebase…</span>
+</header>
+
+<section class="controls">
+    <input type="text" id="search" placeholder="Buscar matrícula…">
+</section>
+
+<section class="table-container">
+    <table id="admin-table">
+        <thead>
+            <tr>
+                <th data-key="mat">Matrícula</th>
+
+                <th data-key="descon">
+                    Desconexão <i class="fa-solid fa-sort"></i>
+                </th>
+
+                <th data-key="tma">
+                    TMA <i class="fa-solid fa-sort"></i>
+                </th>
+
+                <th data-key="pausa">
+                    Pausas <i class="fa-solid fa-sort"></i>
+                </th>
+
+                <th data-key="atendidas">
+                    Atendidas <i class="fa-solid fa-sort"></i>
+                </th>
+
+                <th data-key="nr17">
+                    Tempo Logado <i class="fa-solid fa-sort"></i>
+                </th>
+
+                <th data-key="jackin">
+                    Jackin <i class="fa-solid fa-sort"></i>
+                </th>
+            </tr>
+        </thead>
+
+        <tbody id="table-body">
+            <!-- linhas via JS -->
+        </tbody>
+    </table>
+</section>
+
+<script type="module" src="admin.js"></script>
+</body>
+</html>

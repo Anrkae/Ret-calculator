@@ -1,0 +1,117 @@
+:root {
+    --bg: #0f1115;
+    --panel: #151821;
+    --border: #24283a;
+    --text: #e5e7eb;
+    --muted: #9ca3af;
+
+    --green: #22c55e;
+    --yellow: #eab308;
+    --red: #ef4444;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Inter, system-ui, sans-serif;
+}
+
+body {
+    background: var(--bg);
+    color: var(--text);
+}
+
+/* HEADER */
+.header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header h1 {
+    font-size: 18px;
+}
+
+#status {
+    font-size: 13px;
+    color: var(--muted);
+}
+
+/* CONTROLS */
+.controls {
+    padding: 12px 20px;
+}
+
+.controls input {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--text);
+}
+
+/* TABLE */
+.table-container {
+    padding: 0 20px 20px;
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--panel);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+thead {
+    background: #111827;
+}
+
+th, td {
+    padding: 12px 10px;
+    text-align: center;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+th {
+    cursor: pointer;
+    user-select: none;
+    color: var(--muted);
+    font-weight: 600;
+}
+
+th i {
+    margin-left: 6px;
+    font-size: 11px;
+    opacity: 0.7;
+}
+
+tbody tr {
+    border-top: 1px solid var(--border);
+}
+
+tbody tr:hover {
+    background: rgba(255,255,255,0.03);
+}
+
+/* STATUS COLORS */
+.green {
+    color: var(--green);
+    font-weight: 600;
+}
+
+.yellow {
+    color: var(--yellow);
+    font-weight: 600;
+}
+
+.red {
+    color: var(--red);
+    font-weight: 700;
+}
