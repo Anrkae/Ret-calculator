@@ -30,7 +30,7 @@ const headers = document.querySelectorAll('th[data-key]');
 
 let users = [];
 let sortKey = 'tma';
-let sortDir = 'desc'; // padrão: TMA MAIOR → MENOR
+let sortDir = 'desc'; // padrão: TMA maior → menor
 
 /* ================= FORMATOS ================= */
 
@@ -94,13 +94,20 @@ async function loadData() {
         const logged = u.shifts.reduce((a, s) => a + (s.end - s.start), 0) / 1000;
         const nr17 = u.shifts.length ? logged / u.shifts.length : 0;
         
-        const pausa = u.pauses.reduce((a, p) => a + (p.end - p.start), 0) / 1000;
+        const pausaTotal = u.pauses.reduce(
+            (a, p) => a + (p.end - p.start), 0
+        ) / 1000;
+        
+        const pausaParticular = u.pauses
+            .filter(p => p.type === 'particular')
+            .reduce((a, p) => a + (p.end - p.start), 0) / 1000;
         
         return {
             mat,
             descon,
             tma,
-            pausa: Math.floor(pausa),
+            particular: Math.floor(pausaParticular),
+            pausa: Math.floor(pausaTotal),
             atendidas,
             nr17: Math.floor(nr17),
             jackin: Math.floor(u.jackin / 1000)
@@ -140,7 +147,11 @@ function render() {
                     ${u.tma}
                 </td>
 
-                <td class="${lowerBetter(u.pausa, METAS.NR17)}">
+                <td class="${lowerBetter(u.particular, METAS.NR17)}">
+                    ${secToHM(u.particular)}
+                </td>
+
+                <td>
                     ${secToHM(u.pausa)}
                 </td>
 
