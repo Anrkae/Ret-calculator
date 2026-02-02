@@ -17,57 +17,51 @@
 
 <section class="controls">
     <input type="text" id="search" placeholder="Buscar matrícula…">
+
+    <select id="date-filter">
+        <option value="today" selected>Hoje</option>
+        <option value="last7">Últimos 7 dias</option>
+        <option value="month">Mês atual</option>
+    </select>
 </section>
 
 <section class="table-container">
     <table id="admin-table">
         <thead>
             <tr>
-                <!-- Matrícula (sem ordenação) -->
-                <th data-key="mat">
-                    Matrícula
-                </th>
+                <th data-key="mat">Matrícula</th>
 
-                <!-- Desconexão -->
                 <th data-key="descon">
                     Desconexão <i class="fa-solid fa-sort"></i>
                 </th>
 
-                <!-- TMA -->
                 <th data-key="tma">
                     TMA <i class="fa-solid fa-sort"></i>
                 </th>
 
-                <!-- Pausa Particular -->
                 <th data-key="particular">
                     Particular <i class="fa-solid fa-sort"></i>
                 </th>
 
-                <!-- Pausas Totais -->
                 <th data-key="pausa">
                     Pausas <i class="fa-solid fa-sort"></i>
                 </th>
 
-                <!-- Atendidas -->
                 <th data-key="atendidas">
                     Atendidas <i class="fa-solid fa-sort"></i>
                 </th>
 
-                <!-- Tempo Logado -->
-                <th data-key="nr17">
+                <th data-key="tempoLogado">
                     Tempo Logado <i class="fa-solid fa-sort"></i>
                 </th>
 
-                <!-- Jackin -->
                 <th data-key="jackin">
                     Jackin <i class="fa-solid fa-sort"></i>
                 </th>
             </tr>
         </thead>
 
-        <tbody id="table-body">
-            <!-- linhas via JS -->
-        </tbody>
+        <tbody id="table-body"></tbody>
     </table>
 </section>
 
