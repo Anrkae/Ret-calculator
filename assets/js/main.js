@@ -424,7 +424,12 @@ window.updateStatsDisplay = function() {
 
     const totalTmaSec = filteredCalls.reduce((a,c) => a + c.duration, 0);
     document.getElementById('stat-tma').innerText = filteredCalls.length ? Math.round(totalTmaSec / filteredCalls.length) : 0;
-    const validDesconexao = filteredCalls.filter(c => c.result === 'retido' || c.result === 'cancelado');
+    const validDesconexao = filteredCalls.filter(
+        c =>
+        c.result === 'retido' ||
+        c.result === 'cancelado' ||
+        c.result === 'outros'
+    );
     const totalCancels = filteredCalls.filter(c => c.result === 'cancelado').length;
     document.getElementById('stat-disc').innerText = validDesconexao.length ? Math.round((totalCancels / validDesconexao.length) * 100) + '%' : '0%';
 
