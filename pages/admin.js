@@ -109,7 +109,14 @@ function applyFilters() {
         
         const mat = doc.matricula;
         if (!map[mat]) {
-            map[mat] = { calls: [], shifts: [], pauses: [], jackin: 0, activeTime: 0, dates: new Set() };
+            map[mat] = { 
+                calls: [], 
+                shifts: [], 
+                pauses: [], 
+                jackin: 0, 
+                activeShiftTime: 0, 
+                dates: new Set() 
+            };
         }
         
         const h = doc.historico || {};
@@ -120,33 +127,32 @@ function applyFilters() {
         map[mat].pauses.push(...(h.pauses || []));
         map[mat].jackin += h.jackinTime || 0;
 
-        // Registrar datas que tiveram atividade para cálculo da média
-        if ((h.shifts && h.shifts.length > 0) || sessao.isShiftActive) {
+        // Registrar dias únicos trabalhados
+        if ((h.shifts && h.shifts.length > 0) || (sessao.isShiftActive)) {
             map[mat].dates.add(dateId);
         }
 
-        // Tempo da sessão que ainda está aberta
+        // Soma o tempo da jornada que ainda não foi fechada (do início ao agora)
         if (sessao.isShiftActive && sessao.shiftStart) {
-            map[mat].activeTime += (agora - sessao.shiftStart);
+            map[mat].activeShiftTime += (agora - sessao.shiftStart);
         }
     });
     
     users = Object.entries(map).map(([mat, u]) => {
-        const atendidas = u.calls.length;
+        const totalAtendidas = u.calls.length; // Soma total
         const cancel = u.calls.filter(c => c.result === 'cancelado').length;
-        const descon = atendidas ? (cancel / atendidas) * 100 : 0;
+        const descon = totalAtendidas ? (cancel / totalAtendidas) * 100 : 0;
         
-        const tma = atendidas ?
-            Math.round(u.calls.reduce((a, c) => a + c.duration, 0) / atendidas) :
+        const tma = totalAtendidas ?
+            Math.round(u.calls.reduce((a, c) => a + c.duration, 0) / totalAtendidas) :
             0;
         
         const diasTrabalhados = u.dates.size || 1;
         
-        // SOMA TOTAL EM SEGUNDOS (Histórico + Sessão Ativa)
-        const tempoLogadoTotalSec = (u.shifts.reduce((a, s) => a + (s.end - s.start), 0) + u.activeTime) / 1000;
+        // Cálculo do Tempo Logado Total (Histórico + Ativo)
+        const tempoLogadoAcumuladoSec = (u.shifts.reduce((a, s) => a + (s.end - s.start), 0) + u.activeShiftTime) / 1000;
         
         const pausaTotalSec = u.pauses.reduce((a, p) => a + (p.end - p.start), 0) / 1000;
-        
         const pausaParticularSec = u.pauses
             .filter(p => String(p.type).toLowerCase() === 'particular')
             .reduce((a, p) => a + (p.end - p.start), 0) / 1000;
@@ -157,11 +163,11 @@ function applyFilters() {
             mat,
             descon,
             tma,
-            // AQUI A MÁGICA: Divide o total pelo número de dias com jornada
+            atendidas: totalAtendidas, // SOMA TOTAL
+            // Médias diárias para os indicadores de tempo
             particular: Math.floor(pausaParticularSec / diasTrabalhados),
             pausa: Math.floor(pausaTotalSec / diasTrabalhados),
-            atendidas: Math.round(atendidas / diasTrabalhados), // Média de atendidas/dia
-            tempoLogado: Math.floor(tempoLogadoTotalSec / diasTrabalhados),
+            tempoLogado: Math.floor(tempoLogadoAcumuladoSec / diasTrabalhados),
             jackin: Math.floor(jackinTotalSec / diasTrabalhados)
         };
     });
