@@ -40,7 +40,7 @@ let sortDir = 'desc';
 const secToHMS = s =>
     `${String(Math.floor(s / 3600)).padStart(2,'0')}:` +
     `${String(Math.floor((s % 3600) / 60)).padStart(2,'0')}:` +
-    `${String(s % 60).padStart(2,'0')}`;
+    `${String(Math.floor(s % 60)).padStart(2,'0')}`;
 
 const secToHM = s => {
     const m = Math.floor(s / 60);
@@ -68,14 +68,15 @@ function inRange(dateStr) {
     }
     
     if (dateFilter.value === 'month') {
-        return docDate.getMonth() === now.getMonth() &&
-            docDate.getFullYear() === now.getFullYear();
+        return (
+            docDate.getMonth() === now.getMonth() &&
+            docDate.getFullYear() === now.getFullYear()
+        );
     }
     
     if (dateFilter.value === 'last7') {
         const diff = (now - docDate) / 86400000;
-        return diff <= 7 &&
-            docDate.getMonth() === now.getMonth();
+        return diff <= 7;
     }
     
     return true;
@@ -95,8 +96,11 @@ async function loadData() {
     applyFilters();
 }
 
+/* ================= PROCESS ================= */
+
 function applyFilters() {
     const map = {};
+    const agora = Date.now();
     
     rawDocs.forEach(doc => {
         const dateId = doc.id.split('_')[0];
@@ -104,14 +108,21 @@ function applyFilters() {
         
         const mat = doc.matricula;
         if (!map[mat]) {
-            map[mat] = { calls: [], shifts: [], pauses: [], jackin: 0 };
+            map[mat] = { calls: [], shifts: [], pauses: [], jackin: 0, activeShiftTime: 0 };
         }
         
         const h = doc.historico || {};
+        const sessao = doc.sessao_atual || {};
+
         map[mat].calls.push(...(h.calls || []));
         map[mat].shifts.push(...(h.shifts || []));
         map[mat].pauses.push(...(h.pauses || []));
         map[mat].jackin += h.jackinTime || 0;
+
+        // CÁLCULO JORNADA ATIVA (Tempo Real)
+        if (sessao.isShiftActive && sessao.shiftStart) {
+            map[mat].activeShiftTime += (agora - sessao.shiftStart);
+        }
     });
     
     users = Object.entries(map).map(([mat, u]) => {
@@ -123,26 +134,34 @@ function applyFilters() {
             Math.round(u.calls.reduce((a, c) => a + c.duration, 0) / atendidas) :
             0;
         
-        const tempoLogado =
-            u.shifts.reduce((a, s) => a + (s.end - s.start), 0) / 1000;
+        const diasTrabalhados = new Set(
+            u.shifts.map(s => new Date(s.start).toDateString())
+        ).size || 1;
+        
+        const isToday = dateFilter.value === 'today';
+        
+        // Soma o que está no histórico + o que está ativo no momento
+        const tempoLogadoTotal = (u.shifts.reduce((a, s) => a + (s.end - s.start), 0) + u.activeShiftTime) / 1000;
         
         const pausaTotal =
             u.pauses.reduce((a, p) => a + (p.end - p.start), 0) / 1000;
         
         const pausaParticular =
             u.pauses
-            .filter(p => p.type === 'particular')
+            .filter(p => String(p.type).toLowerCase() === 'particular')
             .reduce((a, p) => a + (p.end - p.start), 0) / 1000;
+        
+        const jackinTotal = u.jackin / 1000;
         
         return {
             mat,
             descon,
             tma,
-            particular: Math.floor(pausaParticular),
-            pausa: Math.floor(pausaTotal),
+            particular: Math.floor(isToday ? pausaParticular : pausaParticular / diasTrabalhados),
+            pausa: Math.floor(isToday ? pausaTotal : pausaTotal / diasTrabalhados),
             atendidas,
-            tempoLogado: Math.floor(tempoLogado),
-            jackin: Math.floor(u.jackin / 1000)
+            tempoLogado: Math.floor(isToday ? tempoLogadoTotal : tempoLogadoTotal / diasTrabalhados),
+            jackin: Math.floor(isToday ? jackinTotal : jackinTotal / diasTrabalhados)
         };
     });
     
@@ -167,9 +186,7 @@ function render() {
     tbody.innerHTML = "";
     
     users
-        .filter(u =>
-            u.mat.toLowerCase().includes(search.value.toLowerCase())
-        )
+        .filter(u => u.mat.toLowerCase().includes(search.value.toLowerCase()))
         .forEach(u => {
             tbody.innerHTML += `
                 <tr>
