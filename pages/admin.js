@@ -44,7 +44,8 @@ const secToHMS = s =>
 
 const secToHM = s => {
     const m = Math.floor(s / 60);
-    return `${Math.floor(m / 60)}h ${m % 60}min`;
+    const h = Math.floor(m / 60);
+    return `${h}h ${m % 60}min`;
 };
 
 const lowerBetter = (v, m) =>
@@ -108,7 +109,7 @@ function applyFilters() {
         
         const mat = doc.matricula;
         if (!map[mat]) {
-            map[mat] = { calls: [], shifts: [], pauses: [], jackin: 0, activeShiftTime: 0 };
+            map[mat] = { calls: [], shifts: [], pauses: [], jackin: 0, activeTime: 0, dates: new Set() };
         }
         
         const h = doc.historico || {};
@@ -119,9 +120,14 @@ function applyFilters() {
         map[mat].pauses.push(...(h.pauses || []));
         map[mat].jackin += h.jackinTime || 0;
 
-        // CÁLCULO JORNADA ATIVA (Tempo Real)
+        // Registrar datas que tiveram atividade para cálculo da média
+        if ((h.shifts && h.shifts.length > 0) || sessao.isShiftActive) {
+            map[mat].dates.add(dateId);
+        }
+
+        // Tempo da sessão que ainda está aberta
         if (sessao.isShiftActive && sessao.shiftStart) {
-            map[mat].activeShiftTime += (agora - sessao.shiftStart);
+            map[mat].activeTime += (agora - sessao.shiftStart);
         }
     });
     
@@ -134,34 +140,29 @@ function applyFilters() {
             Math.round(u.calls.reduce((a, c) => a + c.duration, 0) / atendidas) :
             0;
         
-        const diasTrabalhados = new Set(
-            u.shifts.map(s => new Date(s.start).toDateString())
-        ).size || 1;
+        const diasTrabalhados = u.dates.size || 1;
         
-        const isToday = dateFilter.value === 'today';
+        // SOMA TOTAL EM SEGUNDOS (Histórico + Sessão Ativa)
+        const tempoLogadoTotalSec = (u.shifts.reduce((a, s) => a + (s.end - s.start), 0) + u.activeTime) / 1000;
         
-        // Soma o que está no histórico + o que está ativo no momento
-        const tempoLogadoTotal = (u.shifts.reduce((a, s) => a + (s.end - s.start), 0) + u.activeShiftTime) / 1000;
+        const pausaTotalSec = u.pauses.reduce((a, p) => a + (p.end - p.start), 0) / 1000;
         
-        const pausaTotal =
-            u.pauses.reduce((a, p) => a + (p.end - p.start), 0) / 1000;
-        
-        const pausaParticular =
-            u.pauses
+        const pausaParticularSec = u.pauses
             .filter(p => String(p.type).toLowerCase() === 'particular')
             .reduce((a, p) => a + (p.end - p.start), 0) / 1000;
         
-        const jackinTotal = u.jackin / 1000;
+        const jackinTotalSec = u.jackin / 1000;
         
         return {
             mat,
             descon,
             tma,
-            particular: Math.floor(isToday ? pausaParticular : pausaParticular / diasTrabalhados),
-            pausa: Math.floor(isToday ? pausaTotal : pausaTotal / diasTrabalhados),
-            atendidas,
-            tempoLogado: Math.floor(isToday ? tempoLogadoTotal : tempoLogadoTotal / diasTrabalhados),
-            jackin: Math.floor(isToday ? jackinTotal : jackinTotal / diasTrabalhados)
+            // AQUI A MÁGICA: Divide o total pelo número de dias com jornada
+            particular: Math.floor(pausaParticularSec / diasTrabalhados),
+            pausa: Math.floor(pausaTotalSec / diasTrabalhados),
+            atendidas: Math.round(atendidas / diasTrabalhados), // Média de atendidas/dia
+            tempoLogado: Math.floor(tempoLogadoTotalSec / diasTrabalhados),
+            jackin: Math.floor(jackinTotalSec / diasTrabalhados)
         };
     });
     
