@@ -19,9 +19,8 @@ const getMatricula = () => localStorage.getItem('claro_matricula');
 const getDataKey = () => `claro_data_${getMatricula()}`;
 const getSessionKey = () => `claro_session_${getMatricula()}`;
 
-// --- ITEM 4 & 5: BUSCA INTELIGENTE DE DADOS ---
+// --- BUSCA DE DADOS ---
 
-// Função global para que o main.js possa esperar a resposta do Firebase
 window.fetchFromFirebase = async function() {
     const matricula = getMatricula();
     if (!matricula) return null;
@@ -47,10 +46,8 @@ async function syncToFirebase() {
 
     const data = JSON.parse(localStorage.getItem(getDataKey()));
     
-    // PROTEÇÃO CRUCIAL: Não sincroniza se os dados locais estiverem vazios/zerados
-    // Isso evita que um localStorage limpo apague uma jornada ativa no Firebase
     if (!data || (!data.calls.length && !data.shifts.length && !data.jackinTime)) {
-        console.log("⚠️ Sync abortado: Dados locais vazios para evitar sobrescrita.");
+        console.log("⚠️ Sync abortado: Dados locais vazios.");
         return; 
     }
 
@@ -69,37 +66,32 @@ async function syncToFirebase() {
     }
 }
 
-// --- ITEM 1: LOGOUT SEGURO E FEEDBACK ---
+// --- LOGOUT: LIMPA LOCALSTORAGE APÓS SALVAR ---
 
 async function executeSecureLogout() {
     const loader = document.getElementById('logout-loader');
     if (loader) loader.style.display = 'flex';
 
     try {
-        // 1. Garantir sincronização final antes de limpar tudo
+        // 1. Sincroniza uma última vez para garantir que o Firebase está atualizado
         await syncToFirebase();
         
-        // 2. Limpar Timers e Intervalos
         window.clearInterval(window.shiftInterval);
         window.clearInterval(window.pauseInterval);
         window.clearInterval(window.callInterval);
 
-        // 3. Limpar LocalStorage (Sessão e Matrícula)
+        // 2. LIMPEZA DO LOCALSTORAGE
         const matriculaAtual = getMatricula();
+        localStorage.removeItem(`claro_data_${matriculaAtual}`);
         localStorage.removeItem(`claro_session_${matriculaAtual}`);
         localStorage.removeItem('claro_matricula');
 
-        // 4. Logout do Firebase
         await signOut(auth);
-
-        // 5. Delay visual para o loader
-        await new Promise(resolve => setTimeout(resolve, 1500));
-
-        // 6. Reload final
+        await new Promise(resolve => setTimeout(resolve, 1000));
         window.location.reload();
         
     } catch (e) {
-        console.error("Erro durante logout:", e);
+        console.error("Erro logout:", e);
         window.location.reload();
     }
 }
@@ -144,20 +136,21 @@ function applyInterceptors() {
     });
 }
 
+// --- LOGIN E RESTAURAÇÃO ---
+
 onAuthStateChanged(auth, async (user) => {
     const matricula = getMatricula();
     if (user && matricula) {
         const modal = document.getElementById('auth-container');
         if (modal) modal.style.display = 'none';
         
-        // Se o LocalStorage estiver zerado ao entrar, força a recuperação imediata
-        if (!localStorage.getItem(getDataKey())) {
-            const remoteData = await window.fetchFromFirebase();
-            if (remoteData) {
-                localStorage.setItem(getDataKey(), JSON.stringify(remoteData));
-                if (window.updateStatsDisplay) window.updateStatsDisplay();
-            }
+        // 1. AO LOGAR: Sempre verifica se existe sessão do dia no Firebase para restaurar
+        const remoteData = await window.fetchFromFirebase();
+        if (remoteData) {
+            localStorage.setItem(getDataKey(), JSON.stringify(remoteData));
+            if (window.updateStatsDisplay) window.updateStatsDisplay();
         }
+        
         syncToFirebase();
     }
 });
@@ -169,11 +162,11 @@ document.addEventListener('click', async (e) => {
         
         if (matricula && matricula.length >= 3) {
             try {
+                // Define a matrícula antes de logar para que o onAuthStateChanged saiba o que buscar
                 localStorage.setItem('claro_matricula', matricula);
                 await signInAnonymously(auth);
                 
                 if (window._pendingShiftAction) {
-                    // O toggleShift no main.js agora é async e lidará com o restoreSession
                     window.toggleShift();
                     window._pendingShiftAction = false;
                 }
