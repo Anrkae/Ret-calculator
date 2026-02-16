@@ -1,0 +1,204 @@
+:root {
+    --primary: #e11e1e;
+    --primary-hover: #ff2d2d;
+    --bg-dark: #0f0f0f;
+    --glass-bg: rgba(255, 255, 255, 0.05);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --text-main: #ffffff;
+    --text-dim: #a0a0a0;
+    --radius: 16px;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    background: radial-gradient(circle at top right, #2c0505, #0f0f0f);
+    color: var(--text-main);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* --- Efeito Glassmorphism --- */
+.glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+}
+
+/* --- Header Status --- */
+header#jackin-snippet {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    margin: 15px;
+    position: sticky;
+    top: 10px;
+    z-index: 1000;
+}
+
+.main-status #shift-status {
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 0.8rem;
+    color: var(--primary);
+}
+
+#session-timer {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.1rem;
+    margin-left: 10px;
+}
+
+/* --- Cards de Métricas --- */
+.home-content {
+    padding: 20px;
+    display: grid;
+    gap: 15px;
+}
+
+.card {
+    padding: 25px;
+    text-align: center;
+    transition: var(--transition);
+}
+
+.card h2 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 5px;
+    background: linear-gradient(to bottom, #fff, #888);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.card p {
+    color: var(--text-dim);
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    letter-spacing: 2px;
+}
+
+.carrossel {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+/* --- Controles de Atendimento --- */
+.control-group.dv {
+    position: fixed;
+    bottom: 100px;
+    left: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.btn {
+    padding: 16px;
+    border-radius: var(--radius);
+    border: none;
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--transition);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.btn-glass {
+    background: var(--primary);
+    color: white;
+    box-shadow: 0 8px 20px rgba(225, 30, 30, 0.3);
+}
+
+.btn-glass:active { transform: scale(0.95); }
+
+/* --- Stats Page --- */
+.stats-header {
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.stats-grid { /* Corrigindo o erro de classe no seu HTML */
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    padding: 0 20px 120px;
+}
+
+.stat-card {
+    padding: 20px;
+    border-left: 4px solid var(--primary);
+}
+
+/* --- Bottom Nav --- */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    height: 80px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    background: rgba(15, 15, 15, 0.8);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid var(--glass-border);
+    padding-bottom: 20px;
+}
+
+.nav-item {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: var(--transition);
+}
+
+.nav-item.active {
+    color: var(--primary);
+}
+
+/* --- Modais --- */
+.modal-content {
+    width: 90%;
+    max-width: 400px;
+    padding: 30px;
+    border: 1px solid rgba(255,255,255,0.2);
+    animation: modalIn 0.3s ease-out;
+}
+
+@keyframes modalIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.motivos-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.btn-m {
+    padding: 15px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    color: white;
+    font-weight: 500;
+}
+
+.none { display: none !important; }
